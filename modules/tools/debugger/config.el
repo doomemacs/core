@@ -21,6 +21,7 @@
 
   ;; Mode-line serves no purpose in REPL window.
   (add-hook 'dape-repl-mode-hook #'mode-line-invisible-mode)
+  (add-hook 'dape-repl-mode-hook #'doom-disable-line-numbers-h)
 
   ;; Persist breakpoints after closing DAPE.
   (dape-breakpoint-global-mode +1)

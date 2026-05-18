@@ -58,6 +58,7 @@
 
   ;; The mode-line does serve any useful purpose is annotation windows
   (add-hook 'pdf-annot-list-mode-hook #'mode-line-invisible-mode)
+  (add-hook 'pdf-annot-list-mode-hook #'doom-disable-line-numbers-h)
 
   ;; HACK: Fix #1107: flickering pdfs when evil-mode is enabled
   ;; We need (list nil) as a workaround for emacs-evil/evil#2016.

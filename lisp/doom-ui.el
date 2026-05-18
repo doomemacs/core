@@ -562,6 +562,8 @@ windows, switch to `doom-fallback-buffer'. Otherwise, delegate to original
 (add-hook 'completion-list-mode-hook #'mode-line-invisible-mode)
 (add-hook 'Man-mode-hook #'mode-line-invisible-mode)
 
+(add-hook 'completion-list-mode-hook #'doom-disable-line-numbers-h)
+(add-hook 'Man-mode-hook #'doom-disable-line-numbers-h)
 
 ;;
 ;;; Third party packages

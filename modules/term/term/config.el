@@ -2,6 +2,7 @@
 
 ;;;###package term
 (add-hook 'term-mode-hook #'mode-line-invisible-mode)
+(add-hook 'term-mode-hook #'doom-disable-line-numbers-h)
 
 
 ;;;###package multi-term

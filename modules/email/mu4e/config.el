@@ -30,6 +30,12 @@
   ;; back to when killing other buffers.
   (add-hook 'mu4e-main-mode-hook #'doom-mark-buffer-as-real-h)
 
+  ;; Line numbers add nothing to mu4e's read-only views (excluding compose).
+  (add-hook! '(mu4e-main-mode-hook
+               mu4e-headers-mode-hook
+               mu4e-view-mode-hook)
+             #'doom-disable-line-numbers-h)
+
   ;; Ensures backward/forward compatibility for mu4e, which is prone to breaking
   ;; updates, and also cannot be pinned, because it's bundled with mu (which you
   ;; must install via your OS package manager).
