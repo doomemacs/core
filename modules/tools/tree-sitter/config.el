@@ -131,7 +131,7 @@
                  (surface "https://github.com/connorlay/tree-sitter-surface" nil nil nil nil)
                  (toml "https://github.com/tree-sitter/tree-sitter-toml" nil nil nil nil)
                  (typst "https://github.com/uben0/tree-sitter-typst" "master" "src" nil nil)
-                 (verilog "https://github.com/gmlarumbe/tree-sitter-systemverilog" nil nil nil nil)
+                 (systemverilog "https://github.com/gmlarumbe/tree-sitter-systemverilog" nil nil nil nil)
                  (vhdl "https://github.com/alemuller/tree-sitter-vhdl" nil nil nil nil)
                  (vue "https://github.com/tree-sitter-grammars/tree-sitter-vue" nil nil nil nil)
                  (wast "https://github.com/wasm-lsp/tree-sitter-wasm" nil "wast/src" nil nil)
