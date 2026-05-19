@@ -118,7 +118,9 @@
                  (bibtex "https://github.com/latex-lsp/tree-sitter-bibtex" nil nil nil nil)
                  (blueprint "https://github.com/huanie/tree-sitter-blueprint" nil nil nil nil)
                  (commonlisp "https://github.com/tree-sitter-grammars/tree-sitter-commonlisp" nil nil nil nil)
-                 (latex "https://github.com/latex-lsp/tree-sitter-latex" nil nil nil nil)
+                 (latex "https://github.com/latex-lsp/tree-sitter-latex" nil nil nil
+                        ;; Pinned due to latex-lsp/tree-sitter-latex#172
+                        "a6c812704b3d3e1541b0853aa0d6d561301320e1")
                  (make "https://github.com/tree-sitter-grammars/tree-sitter-make" nil nil nil nil)
                  (nu "https://github.com/nushell/tree-sitter-nu" nil nil nil nil)
                  (org "https://github.com/milisims/tree-sitter-org" nil nil nil nil)
