@@ -42,12 +42,13 @@
   (setq diff-hl-fringe-bmp-function #'+vc-gutter-type-at-pos-fn)
   (setq diff-hl-draw-borders nil)
 
-  (add-hook! 'diff-hl-mode-hook
-    (defun +vc-gutter-make-diff-hl-faces-transparent-h ()
-      (mapc (doom-rpartial #'set-face-background nil)
-            '(diff-hl-insert
-              diff-hl-delete
-              diff-hl-change))))
+  (after! diff-hl
+    (add-hook! '(diff-hl-mode-hook doom-load-theme-hook)
+      (defun +vc-gutter-make-diff-hl-faces-transparent-h ()
+        (mapc (doom-rpartial #'set-face-background nil)
+              '(diff-hl-insert
+                diff-hl-delete
+                diff-hl-change)))))
 
   ;; FIX: To minimize overlap between flycheck indicators and diff-hl indicators
   ;;   in the left fringe.
