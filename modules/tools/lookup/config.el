@@ -37,6 +37,8 @@
             '(("Yandex"            "https://yandex.com/search/?text=%s")
               ("Yandex images"     "https://yandex.com/images/search?text=%s")
               ("Yandex maps"       "https://yandex.com/maps?text=%s")))
+          (when (modulep! :lang racket)
+            '(("Racket Manuals" "https://docs.racket-lang.org/search/index.html?q=%s")))
           (when (modulep! :lang rust)
             '(("Rust Docs" "https://doc.rust-lang.org/std/?search=%s"))))
   "An alist that maps online resources to either:
