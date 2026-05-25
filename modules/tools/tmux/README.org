@@ -10,7 +10,8 @@ This module provides an API for talking to Tmux sessions.
 /This module has no dedicated maintainers./ [[doom-contrib-maintainer:][Become a maintainer?]]
 
 ** Module flags
-/This module has no flags./
+- +navigator ::
+  Enable navigation between Emacs buffer windows and tmux panes. reference: [[https://github.com/keith/evil-tmux-navigator][evil-tmux-navigator]]
 
 ** Packages
 /This module doesn't install any packages./
