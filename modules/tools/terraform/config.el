@@ -37,3 +37,16 @@
   :after terraform-mode
   :config
   (set-company-backend! 'terraform-mode 'company-terraform))
+
+(use-package! terraform-docs
+  :when (modulep! +docs)
+  :defer t
+  :after terraform-mode
+  :config
+  (map! :map terraform-mode-map
+        :localleader
+        :desc "docs" "d" #'terraform-docs
+        (:prefix ("D" . "docs submenu")
+         :desc "to buffer"        "D" #'terraform-docs-to-buffer
+         :desc "to file"          "d" (cmd! (terraform-docs-to-file nil (read-file-name "Output file: ")))
+         :desc "to file and open" "o" (cmd! (terraform-docs-to-file-and-open nil (read-file-name "Output file: "))))))
