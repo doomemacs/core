@@ -59,6 +59,22 @@ Returns the vterm buffer."
      (let (display-buffer-alist)
        (vterm vterm-buffer-name)))))
 
+;;;###autoload
+(defun +vterm/split-below ()
+  "Create a new vterm window below the current one."
+  (interactive)
+  (let ((ignore-window-parameters t))
+    (select-window (split-window-vertically))
+    (+vterm/here t)))
+
+;;;###autoload
+(defun +vterm/split-right ()
+  "Create a new vterm window to the right of the current one."
+  (interactive)
+  (let ((ignore-window-parameters t))
+    (select-window (split-window-horizontally))
+    (+vterm/here t)))
+
 (defun +vterm--configure-project-root-and-display (arg display-fn)
   "Sets the environment variable PROOT and displays a terminal using `display-fn`.
 

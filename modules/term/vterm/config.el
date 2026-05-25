@@ -16,7 +16,15 @@
   :config
   (set-popup-rule! "^\\*vterm" :size 0.25 :vslot -4 :select t :quit nil :ttl 0)
 
-  (map! :map vterm-mode-map "C-q" #'vterm-send-next-key)
+  (map! :map vterm-mode-map
+        "C-q" #'vterm-send-next-key
+        ;; Tmux-esque prefix keybinds
+        "C-c s" #'+vterm/split-below
+        "C-c v" #'+vterm/split-right
+        [remap split-window-below]  #'+vterm/split-below
+        [remap split-window-right]  #'+vterm/split-right
+        [remap evil-window-split]   #'+vterm/split-below
+        [remap evil-window-vsplit]  #'+vterm/split-right)
 
   ;; Once vterm is dead, the vterm buffer is useless. Why keep it around? We can
   ;; spawn another if want one.
