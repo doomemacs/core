@@ -4,7 +4,7 @@
 (defun +default/newline-above ()
   "Insert an indented new line before the current one."
   (interactive)
-  (if (featurep 'evil)
+  (if (and (featurep 'evil) evil-local-mode)
       (call-interactively 'evil-open-above)
     (beginning-of-line)
     (save-excursion (newline))
@@ -14,7 +14,7 @@
 (defun +default/newline-below ()
   "Insert an indented new line after the current one."
   (interactive)
-  (if (featurep 'evil)
+  (if (and (featurep 'evil) evil-local-mode)
       (call-interactively 'evil-open-below)
     (end-of-line)
     (newline-and-indent)))
