@@ -156,7 +156,7 @@ Otherwise return t on success, nil otherwise."
         (persp-delete-other-windows))
       (switch-to-buffer (doom-fallback-buffer))
       (setf (persp-window-conf persp)
-            (funcall persp-window-state-get-function (selected-frame))))
+            (persp-window-state-get (selected-frame))))
     persp))
 
 ;;;###autoload
