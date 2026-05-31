@@ -43,10 +43,10 @@
         :n  "éb"    #'previous-buffer
         :n  "èf"    #'+evil/next-file
         :n  "éf"    #'+evil/previous-file
-        :m  "èu"    #'+evil:url-encode
-        :m  "éu"    #'+evil:url-decode
-        :m  "èy"    #'+evil:c-string-encode
-        :m  "éy"    #'+evil:c-string-decode
+        :m  "éu"    #'+evil:url-encode
+        :m  "èu"    #'+evil:url-decode
+        :m  "éy"    #'+evil:c-string-encode
+        :m  "èy"    #'+evil:c-string-decode
         (:when (modulep! :ui vc-gutter)
          :m "èd"   #'+vc-gutter/next-hunk
          :m "éd"   #'+vc-gutter/previous-hunk)

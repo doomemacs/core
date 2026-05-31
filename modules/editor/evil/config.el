@@ -499,13 +499,13 @@ don't offer any/enough real value to users.")
       :n  "[b"    #'previous-buffer
       :n  "]f"    #'+evil/next-file
       :n  "[f"    #'+evil/previous-file
-      :m  "]u"    #'+evil:url-encode
-      :m  "[u"    #'+evil:url-decode
-      :m  "]y"    #'+evil:c-string-encode
-      :m  "[y"    #'+evil:c-string-decode
+      :m  "[u"    #'+evil:url-encode
+      :m  "]u"    #'+evil:url-decode
+      :m  "[y"    #'+evil:c-string-encode
+      :m  "]y"    #'+evil:c-string-decode
       (:when (modulep! :lang web)
-       :m "]x"   #'+web:encode-html-entities
-       :m "[x"   #'+web:decode-html-entities)
+       :m "[x"   #'+web:encode-html-entities
+       :m "]x"   #'+web:decode-html-entities)
       (:when (modulep! :ui vc-gutter)
        :m "]d"   #'+vc-gutter/next-hunk
        :m "[d"   #'+vc-gutter/previous-hunk)
