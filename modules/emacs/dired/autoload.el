@@ -24,7 +24,7 @@ sidebars)."
   (interactive "P")
   (require 'dirvish-side)
   (save-selected-window
-    (let ((win (dirvish-side--session-visible-p)))
+    (let ((win (dirvish-side-session-visible-p)))
       (when (and win arg)
         (with-selected-window win
           (dirvish-quit))
@@ -32,4 +32,4 @@ sidebars)."
       (unless win
         (call-interactively #'dirvish-side))
       (dirvish-side--auto-jump)))
-  (select-window (dirvish-side--session-visible-p)))
+  (select-window (dirvish-side-session-visible-p)))
