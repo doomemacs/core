@@ -21,7 +21,7 @@ Through LSP, this module offers:
 [[doom-contrib-maintainer:][Become a maintainer?]]
 
 ** Module flags
-- lsp ::
+- +lsp ::
   Enable LSP support for ~c-mode~, ~c++-mode~, and ~objc-mode~. Requires [[doom-module::tools lsp]]
   and a langserver (supports clangd, ccls, and cquery).
 - +tree-sitter ::

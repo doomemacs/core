@@ -6,7 +6,7 @@
 * Table of Contents :TOC_3:noexport:
 - [[#description][Description]]
   - [[#maintainers][Maintainers]]
-  - [[#module-flags][Module Flags]]
+  - [[#module-flags][Module flags]]
   - [[#plugins][Plugins]]
 - [[#prerequisites][Prerequisites]]
   - [[#with-tunnel][With =+tunnel=]]
@@ -24,15 +24,16 @@
 This module adds collaborative editing via the [[https://code.librehq.com/qhong/crdt.el][crdt]] plugin.
 
 ** Maintainers
-+ [[https://github.com/artenator][@artenator]]
-+ [[https://github.com/jming422][@jming422]]
+- [[https://github.com/artenator][@artenator]]
+- [[https://github.com/jming422][@jming422]]
 
-** Module Flags
-+ =+tunnel= Enables TCP forwarding over the [[https://tox.chat/][Tox]] protocol so that a collaborative
+** Module flags
+- +tunnel ::
+  Enables TCP forwarding over the [[https://tox.chat/][Tox]] protocol so that a collaborative
   editing session can be established between machines that are behind a NAT.
 
 ** Plugins
-+ [[https://code.librehq.com/qhong/crdt.el][crdt]]
+- [[https://code.librehq.com/qhong/crdt.el][crdt]]
 
 * Prerequisites
 With no flags, this module requires nothing else to work. The =+tunnel= flag has one dependency:
@@ -57,26 +58,26 @@ Tuntox is currently not supported on Windows, so Windows users cannot use the
 more options, see [[*People outside my LAN can't connect to the collab session I'm hosting][this Troubleshooting entry]].
 
 * Features
-+ Start a collaborative editing session in one of your buffers with =M-x
+- Start a collaborative editing session in one of your buffers with =M-x
   crdt-share-buffer= and following the prompts.
-+ If you're using =+tunnel=, get the sharable URL of your session using =M-x
+- If you're using =+tunnel=, get the sharable URL of your session using =M-x
   crdt-copy-url=. If not using =+tunnel=, then instead of a URL, others can
   connect using your public IP address and chosen TCP port number (default port
   is 6530)
-+ Others can connect to your session using =M-x crdt-connect= and following the
+- Others can connect to your session using =M-x crdt-connect= and following the
   prompts to pass in your tunnel URL or IP address and port
-+ Once connected, some commands you can use are:
-  + =crdt-list-buffers= to list shared buffers. Use this after =crdt-connect= to
+- Once connected, some commands you can use are:
+  - =crdt-list-buffers= to list shared buffers. Use this after =crdt-connect= to
     open shared buffers for editing!
-  + =crdt-share-buffer= Start a new collaboration session, or add more buffers
+  - =crdt-share-buffer= Start a new collaboration session, or add more buffers
     to an existing session. Once a session has started, both the host and
     clients can use this function to share buffers!
-  + =crdt-goto-user= to jump to another collaborator
-  + =crdt-follow-user= / =crdt-stop-follow= to toggle following another
+  - =crdt-goto-user= to jump to another collaborator
+  - =crdt-follow-user= / =crdt-stop-follow= to toggle following another
     collaborator
-  + =crdt-visualize-author-mode= to add colors to regions of the buffer,
+  - =crdt-visualize-author-mode= to add colors to regions of the buffer,
     visualizing who most recently edited each part of the buffer
-  + =crdt-stop-session= (host) / =crdt-disconnect= (client) to exit the collab
+  - =crdt-stop-session= (host) / =crdt-disconnect= (client) to exit the collab
     session
 
 ** Keybindings
@@ -122,13 +123,13 @@ Without =+tunnel= enabled, on most home/work networks you will be unable to have
 others join you from across the Internet unless you set something up to
 facilitate the connection between collaborators.
 You have a lot of options here, but some of the most common are:
-+ Enable the =+tunnel= flag to tunnel your traffic using the [[https://tox.chat/][Tox]] peer-to-peer
+- Enable the =+tunnel= flag to tunnel your traffic using the [[https://tox.chat/][Tox]] peer-to-peer
   networking protocol
-+ Use a VPN
-+ Use a non-peer-to-peer tunneling method, such as Teredo. One free software
+- Use a VPN
+- Use a non-peer-to-peer tunneling method, such as Teredo. One free software
   implementation of this method is called [[https://www.remlab.net/miredo/][Miredo]]
-+ Use a TCP reverse proxy server, such as [[https://ngrok.com/][ngrok]]
-+ Use SSH port forwarding, if you have access to a server with a public network
+- Use a TCP reverse proxy server, such as [[https://ngrok.com/][ngrok]]
+- Use SSH port forwarding, if you have access to a server with a public network
   address
 
 ** I got an error saying something including "crdt.el protocol"

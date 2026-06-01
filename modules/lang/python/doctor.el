@@ -41,10 +41,6 @@
   (unless (executable-find "cython")
     (warn! "Couldn't find cython. cython-mode will not work.")))
 
-(when (modulep! +ipython)
-  (unless (executable-find "ipython")
-    (warn! "Couldn't find ipython in your PATH")))
-
 (unless (executable-find "pytest")
   (warn! "Couldn't find pytest. Running tests through pytest will not work."))
 

@@ -27,6 +27,8 @@ or synonyms.
   Enable integration with Dash.app docsets.
 - +offline ::
   Install and prefer offline dictionary/thesaurus (with [[doom-module:+dictionary]]).
+- +yandex ::
+  Add Yandex, Yandex Images, and Yandex Maps to [[var:+lookup-provider-url-alist]].
 
 ** Packages
 - [[doom-package:dumb-jump]]
