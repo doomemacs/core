@@ -226,7 +226,7 @@ FUNCTION
   :when (modulep! +forge)
   :after magit
   :init
-  (after! evil-collection-magit
+  (after! (evil-collection-magit code-review)
     (dolist (binding evil-collection-magit-mode-map-bindings)
       (pcase-let* ((`(,states _ ,evil-binding ,fn) binding))
         (dolist (state states)
