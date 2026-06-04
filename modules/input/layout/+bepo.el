@@ -211,6 +211,23 @@ In all cases, 'h' functions go to 'c' and 'l' ones go to 'r' so the navigation k
           "s" nil
           "t" nil))
 
+  (after! dirvish
+    ;; Without this, "s" stays mapped to 'symlinks' prefix of dirvish (in the
+    ;; 'dirvish' map, configured in (:emacs dired) module
+    (map! :map dirvish-mode-map "s" nil)
+    ;; Manual rotation of the gh/gl bindings
+    (map! :map dirvish-mode-map
+          :n "gh" nil
+          :n "gl" nil
+          :n "gc" '#dirvish-subtree-up
+          :n "gr" '#dirvish-subtree-toggle)
+    (if (eq +layout-bepo-cr-rotation-style 'ergodis)
+        (map! :map dirvish-mode-map
+              :n "gh" '#revert-buffer)
+      (map! :map dirvish-mode-map
+            :n "gl" '#revert-buffer))
+    (+layout-bepo-rotate-keymaps '(dirvish-mode-map)))
+
   
   ;; Start of the Magit zone
   ;;
