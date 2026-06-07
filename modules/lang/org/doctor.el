@@ -1,6 +1,9 @@
 ;; -*- lexical-binding: t; no-byte-compile: t; -*-
 ;;; lang/org/doctor.el
 
+(unless (executable-find "makeinfo")
+  (warn! "Couldn't find makeinfo. Org Mode and Org Guide info manuals will not be available."))
+
 (when (modulep! +gnuplot)
   (unless (executable-find "gnuplot")
     (warn! "Couldn't find gnuplot. org-plot/gnuplot will not work")))

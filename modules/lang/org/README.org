@@ -201,6 +201,7 @@ For [[doom-module:+jupyter]], install =jupyterlab= or =jupyter-notebook= ([[http
 #+begin_src sh
 apt-get install texlive dvipng
 apt-get install gnuplot
+apt-get install texinfo        # for makeinfo binary
 #+end_src
 
 ** NixOS
