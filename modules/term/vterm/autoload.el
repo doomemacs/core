@@ -34,6 +34,9 @@ Returns the vterm buffer."
                                               buffer-name)
                                     return buf)
                            (get-buffer-create buffer-name))))
+           ;; Explicitly require vterm before `with-current-buffer', since
+           ;; loading vterm can change the current buffer
+           (require 'vterm)
            (with-current-buffer buffer
              (unless (eq major-mode 'vterm-mode)
                (vterm-mode))
