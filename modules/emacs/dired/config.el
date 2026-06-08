@@ -94,12 +94,10 @@ Fixes #3939: unsortable dired entries on Windows."
       (funcall fn window)))
 
   ;; Fixes #8038. This setting is for folks who expect to be able to switch back
-  ;; to dired buffers where the file is opened from.  In other cases, don't
-  ;; recycle sessions. We don't want leftover buffers lying around, especially
-  ;; if users are reconfiguring Dirvish or trying to recover from an error. It's
-  ;; too easy to accidentally break Dirvish (e.g. by focusing the header window)
-  ;; at the moment.  Starting from scratch isn't even that expensive, anyway.
-  (setq dirvish-reuse-session 'open)
+  ;; to dired buffers where the file is opened from. Doom's cleanup hook
+  ;; (`+dired--cleanup-dirvish-h') handles killing sessions on project/workspace
+  ;; switches, so `t' is safe here.
+  (setq dirvish-reuse-session t)
 
   (if (modulep! +dirvish)
       (setq dirvish-attributes '(file-size)
