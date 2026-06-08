@@ -30,10 +30,10 @@
 (evil-define-command +workspace:switch-next (&optional count)
   "Switch to next workspace. If COUNT, switch to COUNT-th workspace."
   (interactive "<c>")
-  (if count (+workspace/switch-to count) (+workspace/cycle +1)))
+  (if count (+workspace/switch-to (max (1- count) 0)) (+workspace/cycle +1)))
 
 ;;;###autoload (autoload '+workspace:switch-previous "ui/workspaces/autoload/evil" nil t)
 (evil-define-command +workspace:switch-previous (&optional count)
   "Switch to previous workspace. If COUNT, switch to COUNT-th workspace."
   (interactive "<c>")
-  (if count (+workspace/switch-to count) (+workspace/cycle -1)))
+  (if count (+workspace/switch-to (max (1- count) 0)) (+workspace/cycle -1)))
