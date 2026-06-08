@@ -70,6 +70,11 @@ Is relative to `org-directory', unless it is absolute. Is used in Doom's default
 (defvar +org-startup-with-animated-gifs nil
   "If non-nil, and the cursor is over a gif inline-image preview, animate it!")
 
+(defvar +org--latex-preview-default-scale nil
+  "The default `org-format-latex-options' :scale value.
+Captured when org appearance is initialized, used by
+`+org-big-font-toggle-latex-previews-h' to restore the original scale.")
+
 
 ;;
 ;;; `org-load' hooks
@@ -103,6 +108,34 @@ Is relative to `org-directory', unless it is absolute. Is used in Doom's default
    ;; buffers in the background. They'll be "restarted" if the user switches to
    ;; them anyway (see `+org-exclude-agenda-buffers-from-workspace-h')
    org-agenda-inhibit-startup t))
+
+
+(defun +org-big-font-toggle-latex-previews-h ()
+  "Scale org LaTeX preview fragments when `doom-big-font-mode' is toggled."
+  (let ((scale (if doom-big-font-mode
+                   (let* ((base-size (or (ignore-errors
+                                           (font-get (doom-normalize-font
+                                                      (or doom-font (face-font 'default)))
+                                                     :size))
+                                         14.0))
+                          (increment (* doom-big-font-increment doom-font-increment)))
+                     (* +org--latex-preview-default-scale
+                        (/ (+ base-size increment) base-size)))
+                 +org--latex-preview-default-scale)))
+    (plist-put org-format-latex-options :scale scale)
+    (dolist (buf (doom-buffers-in-mode 'org-mode))
+      (if (get-buffer-window buf)
+          (with-current-buffer buf
+            (org-clear-latex-preview)
+            (org--latex-preview-region (point-min) (point-max)))
+        (with-current-buffer buf
+          (add-hook 'doom-switch-buffer-hook #'+org--regenerate-latex-previews-h nil 'local))))))
+
+(defun +org--regenerate-latex-previews-h ()
+  "Regenerate LaTeX previews in current buffer and remove self from hook."
+  (remove-hook 'doom-switch-buffer-hook #'+org--regenerate-latex-previews-h 'local)
+  (org-clear-latex-preview)
+  (org--latex-preview-region (point-min) (point-max)))
 
 
 (defun +org-init-appearance-h ()
@@ -142,6 +175,9 @@ Is relative to `org-directory', unless it is absolute. Is used in Doom's default
         org-outline-path-complete-in-steps nil)
 
   (plist-put org-format-latex-options :scale 1.5) ; larger previews
+  (setq +org--latex-preview-default-scale
+        (plist-get org-format-latex-options :scale))
+  (add-hook 'doom-big-font-mode-hook #'+org-big-font-toggle-latex-previews-h)
 
   ;; HACK: Face specs fed directly to `org-todo-keyword-faces' don't respect
   ;;   underlying faces like the `org-todo' face does, so we define our own
