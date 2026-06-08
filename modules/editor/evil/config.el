@@ -146,7 +146,10 @@ directives. By default, this only recognizes C directives."
       [up]   #'evil-previous-visual-line
       [down] #'evil-next-visual-line
       [home] #'evil-beginning-of-visual-line
-      [end]  #'evil-end-of-visual-line))
+      [end]  #'evil-end-of-visual-line)
+    (evil-define-minor-mode-key 'normal 'visual-line-mode
+      "cc" #'+evil:change-whole-visual-line
+      "S"  #'+evil:change-whole-visual-line))
 
 
   ;; --- evil hacks -------------------------

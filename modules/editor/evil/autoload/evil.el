@@ -192,6 +192,27 @@ Widens narrowed buffers first. If BANG, use indirect buffer clones instead."
       (indent-rigidly (point-min) (point-max) (- indent))
       (evil-yank (point-min) (point-max)))))
 
+;;;###autoload (autoload '+evil:change-whole-visual-line "editor/evil/autoload/evil" nil t)
+(evil-define-operator +evil:change-whole-visual-line (beg end register yank-handler)
+  "Change whole visual line, respecting `visual-line-mode'.
+Unlike `evil-change-whole-line', this operates on visual lines rather than
+physical lines, preventing newline deletion in wrapped lines."
+  :motion evil-line-or-visual-line
+  (interactive "<r><x>")
+  (let ((vbeg (save-excursion (goto-char beg) (beginning-of-visual-line) (point)))
+        (vend (save-excursion (goto-char (max beg (1- end))) (end-of-visual-line) (point))))
+    (cond
+     ;; Full physical line(s) — use 'line type for proper open-line + indent
+     ((and (= vbeg (save-excursion (goto-char vbeg) (line-beginning-position)))
+           (>= vend (save-excursion (goto-char vend) (line-end-position))))
+      (evil-change vbeg vend 'line register yank-handler))
+     ;; Empty line — just enter insert mode
+     ((<= vend vbeg)
+      (evil-insert 1))
+     ;; Visual line subset — use 'inclusive to preserve physical line structure
+     (t
+      (evil-change vbeg vend 'inclusive register yank-handler)))))
+
 
 ;;
 ;;; wgrep
