@@ -51,6 +51,7 @@ inserting the link."
     :around #'org-roam-node-insert
     (if (and (bound-and-true-p evil-local-mode)
              (not (evil-insert-state-p))
+             (not (evil-visual-state-p))
              (or (looking-at-p "[[:blank:]]")
                  (evil-eolp)))
         (evil-with-state 'insert
