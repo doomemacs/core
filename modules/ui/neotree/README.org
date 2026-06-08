@@ -40,10 +40,14 @@ NERDTree.
  󱌣 This module has no usage documentation yet. [[doom-contrib-module:][Write some?]]
 #+end_quote
 
-* TODO Configuration
-#+begin_quote
- 󱌣 This module has no configuration documentation yet. [[doom-contrib-module:][Write some?]]
-#+end_quote
+* Configuration
+** Keeping neotree synchronized
+To keep neotree up to date whenever you switch to another buffer or project,
+add or integrate the following snippet to your =config.el=:
+#+begin_src elisp
+(after! neotree
+  (add-hook 'doom-switch-buffer-hook #'+neotree/refresh))
+#+end_src
 
 * Troubleshooting
 /There are no known problems with this module./ [[doom-report:][Report one?]]

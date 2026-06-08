@@ -68,3 +68,32 @@
              (neo-point-auto-indent)))
           (t
            (call-interactively #'neotree-enter)))))
+
+;;;###autoload
+(defun +neotree/refresh ()
+  "Refresh neotree to show the current file's project if
+  neotree is open, the current buffer belongs to a file,
+  that file belongs to a project, and neotree is not
+  already showing that project."
+ (interactive)
+ (let* ((cur-buffer      (current-buffer))
+        (cur-buffer-file (buffer-file-name cur-buffer)))
+   ;; We refresh neotree only when all of the following conditions are met.
+   ;; 1. The current buffer belongs to a file. This condition avoids updates
+   ;;    when switching to buffers such as *doom* or *scratch*.
+   ;; 2. Neotree is open.
+   ;; 3. The current buffer is in a project that neotree can show.
+   ;; 4. Neotree is not already showing that buffer's project.
+   (when (and cur-buffer-file
+              (neo-global--window-exists-p)
+              (projectile-project-root)
+              (not (neo-global--file-in-root-p cur-buffer-file)))
+     ;; Refresh neotree by:
+     ;; 1. Explicitly changing the directory to the current project root because
+     ;;    neotree sometimes picks the wrong root (e.g., chooses a subdirectory).
+     (neotree-dir (doom-project-root))
+     ;; 2. Opening our current file in neotree. This is the actual refresh.
+     (+neotree/find-this-file)
+     ;; 3. Focusing the current buffer because +neotree/find-this-file switches
+     ;;    focus to the neotree window.
+     (select-window (get-buffer-window cur-buffer)))))
