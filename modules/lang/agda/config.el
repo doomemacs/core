@@ -13,6 +13,21 @@
 
   ;; TODO: agda2-ts-mode
 
+  ;; Fix #5711: Evil clears `current-input-method' in normal state, which
+  ;; prevents agda's `read-string' (with INHERIT-INPUT-METHOD) from inheriting
+  ;; the agda input method. Restore it from `evil-input-method'.
+  (when (modulep! :editor evil)
+    (defadvice! +agda--preserve-input-method-in-minibuffer-a (fn &rest args)
+      "Preserve the input method in evil normal mode for minibuffer prompts."
+      :around '(read-from-minibuffer read-string)
+      (if (and evil-input-method
+               (bound-and-true-p evil-local-mode)
+               (evil-normal-state-p))
+          (with-temp-buffer
+            (activate-input-method evil-input-method)
+            (apply fn args))
+        (apply fn args))))
+
   (map! :map agda2-mode-map
         :localleader
         "?"   #'agda2-show-goals
