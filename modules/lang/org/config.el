@@ -217,6 +217,13 @@ Is relative to `org-directory', unless it is absolute. Is used in Doom's default
   ;; I prefer C-c C-c over C-c ' (more consistent)
   (define-key org-src-mode-map (kbd "C-c C-c") #'org-edit-src-exit)
 
+  (defadvice! +org--fix-table-edit-hint-a (&rest _)
+    "Show correct exit key hint for table.el editing.
+table.el uses `table-cell-map' (a text property keymap) which captures C-c C-c
+as a prefix for table operations, so the actual exit key is C-c '."
+    :after #'org-edit-table.el
+    (message "Edit, then exit with `C-c '' or abort with `C-c C-k'"))
+
   ;; Don't process babel results asynchronously when exporting org, as they
   ;; won't likely complete in time, and will instead output an ob-async hash
   ;; instead of the wanted evaluation results.
