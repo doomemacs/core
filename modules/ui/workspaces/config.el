@@ -210,7 +210,12 @@ stored in `persp-save-dir'.")
   (advice-add #'persp-asave-on-exit :around #'+workspaces-autosave-real-buffers-a)
 
   ;; Fix #1973: visual selection surviving workspace changes
-  (add-hook 'persp-before-deactivate-functions #'deactivate-mark)
+  ;; `persp-before-deactivate-functions' calls its hooks with three arguments,
+  ;; but `deactivate-mark' only accepts an optional FORCE argument, so passing
+  ;; it directly throws (wrong-number-of-arguments deactivate-mark 3). Wrap it.
+  (add-hook! 'persp-before-deactivate-functions
+    (defun +workspaces-deactivate-mark-h (&rest _)
+      (deactivate-mark)))
 
   ;; Fix #1017: stop session persistence from restoring broken childframes.
   (add-hook 'persp-after-load-state-functions #'doom-kill-childframes-h)
