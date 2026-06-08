@@ -61,6 +61,8 @@
       (and (+literate-tangle +literate-config-file
                              doom-module-config-file
                              doom-user-dir)
+           (when (modulep! +pretty)
+             (+literate-auto-indent))
            (or (not noninteractive)
                (exit! "__NOTANGLE=1 $@")))))
 
@@ -101,7 +103,9 @@
          (= 0 (process-exit-status process)))
     (message "Tangled config.org sucessfully (took %.1fs)"
              (- (float-time) +literate-tangle--async-proc-start-time))
-    (setq +literate-tangle--async-proc nil))
+    (setq +literate-tangle--async-proc nil)
+    (when (modulep! +pretty)
+      (+literate-auto-indent)))
    ((memq (process-status process) '(exit signal))
     (pop-to-buffer (get-buffer " *tangle config*"))
     (message "Failed to tangle config.org (after %.1fs)"
@@ -150,6 +154,29 @@
             (unless result
               (set-window-configuration c))))))))
 
+;;;###autoload
+(defun +literate-auto-indent ()
+  "Indent the tangled config.el file according to lisp indenting rules."
+  (let ((dest-file (concat (file-name-sans-extension +literate-config-file) ".el")))
+    (when (file-exists-p dest-file)
+      (with-current-buffer (find-file-noselect dest-file)
+        (widen)
+        ;; Set explicitly so indenting rules are correctly applied.
+        (emacs-lisp-mode)
+        (indent-region (point-min) (point-max))
+        (save-buffer)))))
+
+;;;###autoload
+(defun +literate-indent-elisp-src-blocks ()
+  "Indent all emacs-lisp src blocks in the current Org buffer, then save."
+  (interactive)
+  (save-excursion
+    (org-babel-map-src-blocks nil
+      (when (string= lang "emacs-lisp")
+        (org-babel-do-in-edit-buffer
+          (emacs-lisp-mode)
+          (indent-region (point-min) (point-max)))))
+    (save-buffer)))
 
 ;;
 ;;; Hooks
