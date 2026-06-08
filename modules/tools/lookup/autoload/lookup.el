@@ -185,20 +185,23 @@ This can be passed nil as its second argument to unset handlers for MODES. e.g.
 
 (autoload 'xref--show-defs "xref")
 (defun +lookup--xref-show (fn identifier &optional show-fn)
-  (let ((xrefs (funcall fn
+  (let ((origin (point-marker))
+        (xrefs (funcall fn
                         (xref-find-backend)
                         identifier)))
-    (when xrefs
-      (let* ((jumped nil)
-             (xref-after-jump-hook
-              (cons (lambda () (setq jumped t))
-                    xref-after-jump-hook)))
-        (funcall (or show-fn #'xref--show-defs)
-                 (lambda () xrefs)
-                 nil)
-        (if (cdr xrefs)
-            'deferred
-          jumped)))))
+    (unwind-protect
+        (when xrefs
+          (funcall (or show-fn #'xref--show-defs)
+                   (lambda () xrefs)
+                   nil)
+          ;; Some xref backends may report "success" without moving point (e.g.
+          ;; returning the current location). In that case, allow fallback
+          ;; backends to run.
+          (if (cdr xrefs)
+              'deferred
+            (or (not (eq (marker-buffer origin) (current-buffer)))
+                (/= (marker-position origin) (point)))))
+      (set-marker origin nil))))
 
 (defun +lookup-dictionary-definition-backend-fn (identifier)
   "Look up dictionary definition for IDENTIFIER."
