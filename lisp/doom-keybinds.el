@@ -31,6 +31,21 @@ and Emacs states, and for non-evil users.")
 (defvar doom-leader-map (make-sparse-keymap)
   "An overriding keymap for <leader> keys.")
 
+(defvar doom-minibuffer-maps
+  (append '(minibuffer-local-map
+            minibuffer-local-ns-map
+            minibuffer-local-completion-map
+            minibuffer-local-must-match-map
+            minibuffer-local-isearch-map
+            read-expression-map)
+          (cond ((modulep! :completion ivy)
+                 '(ivy-minibuffer-map
+                   ivy-switch-buffer-map))
+                ((modulep! :completion helm)
+                 '(helm-map
+                   helm-rg-map
+                   helm-read-file-map))))
+  "A list of all the keymaps used for the minibuffer.")
 
 ;;
 ;;; Global keybind settings

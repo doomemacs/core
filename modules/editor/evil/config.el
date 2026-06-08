@@ -691,3 +691,17 @@ don't offer any/enough real value to users.")
            :i "C-o"  #'completion-at-point
            :i "C-n"  #'cape-dabbrev
            :i "C-p"  #'+corfu/dabbrev-this-buffer))))
+
+
+(unless evil-disable-insert-state-bindings
+  (when (modulep! :completion corfu)
+    (define-key!
+      :keymaps (append doom-minibuffer-maps
+                       (when (modulep! :editor evil +everywhere)
+                         '(evil-ex-completion-map)))
+      "C-x C-f"  #'cape-file
+      "C-x s"    #'cape-dict
+      "C-x C-s"  #'yasnippet-capf
+      "C-x C-o"  #'completion-at-point
+      "C-x C-n"  #'cape-dabbrev
+      "C-x C-p"  #'+corfu/dabbrev-this-buffer)))

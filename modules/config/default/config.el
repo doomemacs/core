@@ -3,22 +3,7 @@
 (defvar +default-want-RET-continue-comments t
   "If non-nil, RET will continue commented lines.")
 
-(defvar +default-minibuffer-maps
-  (append '(minibuffer-local-map
-            minibuffer-local-ns-map
-            minibuffer-local-completion-map
-            minibuffer-local-must-match-map
-            minibuffer-local-isearch-map
-            read-expression-map)
-          (cond ((modulep! :completion ivy)
-                 '(ivy-minibuffer-map
-                   ivy-switch-buffer-map))
-                ((modulep! :completion helm)
-                 '(helm-map
-                   helm-rg-map
-                   helm-read-file-map))))
-  "A list of all the keymaps used for the minibuffer.")
-
+(defvaralias '+default-minibuffer-maps 'doom-minibuffer-maps)
 
 ;;
 ;;; Reasonable defaults
