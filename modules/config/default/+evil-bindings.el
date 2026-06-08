@@ -117,6 +117,25 @@
       (:after geiser-doc :map geiser-doc-mode-map
        :n "o"    #'link-hint-open-link)
 
+      ;; HACK Restore evil-paste-pop in comint-derived modes (shell, REPLs,
+      ;;   etc), where evil-collection overrides C-p/C-n in normal state. This
+      ;;   checks `last-command' to dispatch between paste-pop and the original
+      ;;   comint history navigation commands.
+      ;; REVIEW: PR this upstream!
+      (:after comint :map comint-mode-map
+       :n "C-p" (cmd! (if (memq last-command '(evil-paste-after
+                                                evil-paste-before
+                                                evil-paste-pop
+                                                evil-paste-pop-next))
+                           (call-interactively #'evil-paste-pop)
+                         (comint-previous-input 1)))
+       :n "C-n" (cmd! (if (memq last-command '(evil-paste-after
+                                                evil-paste-before
+                                                evil-paste-pop
+                                                evil-paste-pop-next))
+                           (call-interactively #'evil-paste-pop-next)
+                         (comint-next-input 1))))
+
       (:unless (modulep! :input layout +bepo)
        (:after (evil-org evil-easymotion)
         :map evil-org-mode-map
