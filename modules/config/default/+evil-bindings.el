@@ -297,6 +297,20 @@
        :g "M-9"   #'+workspace/switch-to-8
        :g "M-0"   #'+workspace/switch-to-final))
 
+;; Disable workspace switching in minibuffer.
+(when (modulep! :ui workspaces)
+  (define-key! :keymaps +default-minibuffer-maps
+    "M-1" #'digit-argument
+    "M-2" #'digit-argument
+    "M-3" #'digit-argument
+    "M-4" #'digit-argument
+    "M-5" #'digit-argument
+    "M-6" #'digit-argument
+    "M-7" #'digit-argument
+    "M-8" #'digit-argument
+    "M-9" #'digit-argument
+    "M-0" #'digit-argument))
+
 ;;; :editor
 (map! (:when (modulep! :editor format)
        :n "gQ" #'+format:region)
