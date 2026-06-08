@@ -1162,6 +1162,20 @@ between the two."
             CSup     (cmd! (org-eval-in-calendar '(calendar-backward-year 1)))
             CSdown   (cmd! (org-eval-in-calendar '(calendar-forward-year 1)))))))
 
+;; HACK When iedit (default backend for evil-multiedit) is active,
+;;   `+org/dwim-at-point' (bound to RET) should yield to multiedit's
+;;   toggle-or-restrict command. Without this, evil-org-mode-map takes
+;;   precedence over evil-multiedit-mode-map, making RET unusable for
+;;   toggling marks in org buffers.
+;; REVIEW: PR this upstream!
+(when (modulep! :editor multiple-cursors)
+  (defadvice! +org--yield-to-multiedit-a (fn &rest args)
+    "Defer to `evil-multiedit-toggle-or-restrict-region' if iedit is active."
+    :around #'+org/dwim-at-point
+    (if (and (bound-and-true-p iedit-mode)
+             (iedit-current-occurrence-string))
+        (call-interactively #'evil-multiedit-toggle-or-restrict-region)
+      (apply fn args))))
 
 (use-package! evil-org-agenda
   :when (modulep! :editor evil +everywhere)
