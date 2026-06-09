@@ -2,6 +2,8 @@
 ;;; Commentary:
 ;;; Code:
 
+(require 'ring)  ; for `ring-insert', `make-ring' (not preloaded in Emacs 30+)
+
 ;;
 ;;; Variables
 
