@@ -230,6 +230,19 @@ localleader prefix."
             (define-key map (kbd doom-leader-alt-key) 'doom/leader))
         (evil-define-key* doom-leader-key-states map (kbd doom-leader-key) 'doom/leader)
         (evil-define-key* doom-leader-alt-key-states map (kbd doom-leader-alt-key) 'doom/leader))
+      ;; HACK: When `doom-localleader-key' is a sub-key of `doom-leader-key'
+      ;;   (e.g. "S m" under "S"), intermediate minor-mode keymaps (like
+      ;;   evil-snipe binding "S" to a command) can block Emacs' prefix key
+      ;;   merging, preventing localleader bindings in mode aux keymaps from
+      ;;   being reached. Ensure the sub-key is a prefix in `doom-leader-map'
+      ;;   so the lookup always succeeds through the leader path.
+      (when (and doom-localleader-key doom-leader-key
+                 (string-prefix-p (concat doom-leader-key " ")
+                                  doom-localleader-key))
+        (let ((sub-key (substring doom-localleader-key
+                                  (1+ (length doom-leader-key)))))
+          (unless (lookup-key doom-leader-map (kbd sub-key))
+            (define-key doom-leader-map (kbd sub-key) (make-sparse-keymap)))))
       (general-override-mode +1))))
 
 
