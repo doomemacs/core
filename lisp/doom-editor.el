@@ -101,6 +101,15 @@ or file path may exist now."
              (set-auto-mode)
              (not (eq major-mode 'fundamental-mode)))))))
 
+(defadvice! doom--preserve-text-scale-for-guess-mode-a (fn)
+  "Preserve the text scale for `set-auto-mode'.
+When a file is saved in `fundamental-mode' the text scale should be preserved.
+This helps with that."
+  :around #'set-auto-mode
+  (let ((scale text-scale-mode-amount))
+    (funcall fn)
+    (text-scale-set scale)))
+
 (defadvice! doom--shut-up-autosave-a (fn &rest args)
   "If a file has autosaved data, `after-find-file' will pause for 1 second to
 tell you about it. Very annoying. This prevents that."
