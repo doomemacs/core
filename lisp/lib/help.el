@@ -355,15 +355,28 @@ without needing to check if they are available."
         (helpful-callable fn)
       (describe-function fn))))
 
+(defun doom--help-module-description (readme)
+  (when (file-regular-p readme)
+    (with-temp-buffer
+      (insert-file-contents readme nil 0 1024)
+      (when (search-forward "#+subtitle: " nil t)
+        (string-trim (buffer-substring (point) (line-end-position)))))))
+
 (defun doom--help-modules-list ()
   (cl-loop for (cat . mod) in (doom-module-list 'all)
            for readme-path = (or (doom-module-locate-path (cons cat mod) "README.org")
                                  (doom-module-locate-path (cons cat mod)))
            for format = (if mod (format "%s %s" cat mod) (format "%s" cat))
+           for description = (doom--help-module-description readme-path)
+           for propformat = (if description
+                                (propertize format 'display
+                                            (concat format #(" " 0 1 (display (space :align-to 30)))
+                                                    description))
+                              format)
            if (doom-module-active-p cat mod)
-           collect (list format readme-path)
+           collect (list propformat readme-path)
            else if (and cat mod)
-           collect (list (propertize format 'face 'font-lock-comment-face)
+           collect (list (propertize propformat 'face 'font-lock-comment-face)
                          readme-path)))
 
 (defun doom--help-current-module-str ()
