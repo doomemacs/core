@@ -258,8 +258,8 @@ Otherwise, `en/disable-command' (in novice.el.gz) is hardcoded to write them to
   (let ((s (if (gnutls-available-p) "s" "")))
     ;; I omit Marmalade because its packages are manually submitted rather than
     ;; pulled, and so often out of date.
-    (add-to-list package-archives `("melpa" . ,(format "http%s://melpa.org/packages/" s)))
-    (add-to-list package-archives `("org"   . ,(format "http%s://orgmode.org/elpa/"   s))))
+    (add-to-list 'package-archives `("melpa" . ,(format "http%s://melpa.org/packages/" s)))
+    (add-to-list 'package-archives `("org"   . ,(format "http%s://orgmode.org/elpa/"   s))))
   ;; Refresh package.el the first time you call `package-install', so it's still
   ;; trivially usable. Remember to run 'doom sync' to purge them; they can
   ;; conflict with packages installed via straight!
@@ -796,7 +796,7 @@ all hooks after it are ignored."
                          def)))
             (unless (eq bdef :ignore)
               (push `(define-key doom-leader-map (general--kbd ,key)
-                       ,bdef)
+                      ,bdef)
                     forms))
             (when-let* ((desc (cadr (memq :which-key udef))))
               (cl-callf2 append
