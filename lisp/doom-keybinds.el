@@ -199,12 +199,10 @@ localleader prefix."
       ;; emacs state)
       `(general-define-key
         :states '(normal visual motion emacs insert)
-        :major-modes t
         :prefix doom-localleader-key
         :non-normal-prefix doom-localleader-alt-key
         ,@args)
     `(general-define-key
-      :major-modes t
       :prefix doom-localleader-alt-key
       ,@args)))
 
