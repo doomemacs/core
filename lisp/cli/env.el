@@ -133,7 +133,9 @@ Why this over exec-path-from-shell?
                     (throw 'skip t)))
                 (push env vars))))
           (pp `(setq exec-path ',(get 'exec-path 'initial-value)
-                     process-environment ',(reverse vars)
+                     process-environment
+                     (append ',(reverse vars)
+                             (default-value 'process-environment))
                      shell-file-name ,shell-file-name)
               (current-buffer)))
         (print! (success "Generated %s") (path env-file))
