@@ -55,7 +55,7 @@ libraries. It is the equivalent of the following shell commands:
       (exit! "doom" "sync" "-u"
              (if aot? '("--aot"))
              (if nobuild? '("-B"))
-             (if jobs `("-j" ,jobs))))
+             (if jobs `("-j" ,(number-to-string jobs)))))
 
      ((doom-cli-upgrade context force? force?)
       ;; Reload Doom's CLI & libraries, in case there were any upstream changes.
