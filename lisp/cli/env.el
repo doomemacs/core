@@ -31,7 +31,8 @@ Each string is a regexp, matched against variable names."
   :type '(repeat regexp)
   :group 'doom-cli)
 
-(defvar doom-env-allow '()
+;;;###autoload
+(defcustom doom-env-allow '()
   "Environment variables to include in envvar files.
 
 This overrules `doom-env-deny'. Each string is a regexp, matched against
