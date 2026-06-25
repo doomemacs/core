@@ -151,11 +151,18 @@ libraries. It is the equivalent of the following shell commands:
                                this-rev
                                new-rev)))
                   (print! "Link to diff: %s" diff-url)
-                  (when (and (not auto-accept-p)
-                             (y-or-n-p "View the comparison diff in your browser?"))
-                    (print! (item "Opened github in your browser."))
-                    (browse-url diff-url)))
-
+                  (if-let* ((gh (executable-find "gh"))
+                            (cmd (format "%s api repos/doomemacs/doomemacs/compare/%s...%s"
+                                         gh this-rev new-rev)))
+                      (progn
+                        (when-let* ((delta (executable-find "delta")))
+                          (setq cmd (format "%s | %s --paging=never" cmd delta)))
+                        (print! "Comparison diff: %s" diff-url)
+                        (sh! cmd))
+                      (when (and (not auto-accept-p)
+                                 (y-or-n-p "View the comparison diff in your browser?"))
+                        (print! (item "Opened github in your browser."))
+                        (browse-url diff-url))))
                 (if (not (or auto-accept-p
                              (y-or-n-p "Proceed with upgrade?")))
                     (ignore (print! (error "Aborted")))
