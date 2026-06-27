@@ -391,7 +391,7 @@ FILL-COLUMN determines the column at which lines will be broken."
   (interactive)
   (letf! ((defun gitinfo (dir)
             (let ((default-directory (expand-file-name dir)))
-              (if (locate-dominating-file ".git" default-directory)
+              (if (locate-dominating-file default-directory ".git")
                   (format "%s %s"
                           (or (cdr (doom-call-process "git" "log" "-1" "--format=%h %cs"))
                               "-")
