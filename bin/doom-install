@@ -21,7 +21,7 @@
      (config?  ("--config" :yes)  "Create `$DOOMDIR' or dummy files therein?")
      (envfile? ("--env")          "(Re)generate an envvars file? (see `$ doom help env`)")
      (install? ("--install" :yes) "Auto-install packages?")
-     (hooks?   ("--hooks" :yes)   "Deploy Doom's git hooks to itself?")
+     (hooks?   ("--hooks" :no)   "Deploy Doom's git hooks to itself?")
      &context context)
   "Installs and sets up Doom Emacs for the first time.
 
