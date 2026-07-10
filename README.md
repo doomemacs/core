@@ -125,8 +125,8 @@ Check out [the FAQ][FAQ] for answers to common questions about the project.
 # Install
 ``` sh
 git clone --depth 1 --recurse-submodules https://github.com/doomemacs/core ~/.config/emacs
-~/.config/emacs/bin/doom sync
 ~/.config/emacs/bin/doom install
+~/.config/emacs/bin/doom sync
 ```
 
 Then [read our Getting Started guide][getting-started] to be walked through
