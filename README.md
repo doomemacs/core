@@ -124,7 +124,7 @@ Check out [the FAQ][FAQ] for answers to common questions about the project.
 
 # Install
 ``` sh
-git clone --depth 1 https://github.com/doomemacs/core ~/.config/emacs
+git clone --depth 1 --recurse-submodules https://github.com/doomemacs/core ~/.config/emacs
 ~/.config/emacs/bin/doom install
 ```
 
