@@ -95,16 +95,16 @@ Why this over exec-path-from-shell?
     (setq-local coding-system-for-write 'utf-8-unix)
     (unless (equal output-file "-")
       (print! (start "%s envvars file...") (if reload? "Reloading" "Generating")))
-    (let* ((deny  (if reload? (doom-file-cookie-p output-file "deny")))
-           (allow (if reload? (doom-file-cookie-p output-file "allow"))))
+    (let* ((deny  (if reload? (doom-unquote (doom-file-cookie output-file "deny"))))
+           (allow (if reload? (doom-unquote (doom-file-cookie output-file "allow")))))
       (pcase-dolist (`(,option . ,rule) rules)
         (push rule (if (member option '("-a" "--allow")) allow deny)))
       (if deny-only  (setq deny  '(".")))
       (if allow-only (setq allow '(".")))
       (insert ";; -*- mode: emacs-lisp; lexical-binding: t; coding: utf-8-unix; -*-\n"
               ";;;###if (or initial-window-system (daemonp))\n"
-              ";;;###allow " (prin1-to-string `(quote ,allow)) "\n"
-              ";;;###deny  " (prin1-to-string `(quote ,deny)) "\n"
+              ";;;###allow " (prin1-to-string allow) "\n"
+              ";;;###deny  " (prin1-to-string deny) "\n"
               ";;;###date  " (format "%S" (format-time-string "%Y-%m-%d %H:%M:%S")) "\n"
               "(put 'process-environment 'doom t)\n")
       (let ((deny  (append deny doom-env-deny))
