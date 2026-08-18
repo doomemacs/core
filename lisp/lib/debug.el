@@ -24,7 +24,7 @@
 (progn
   (cl-defun set-debug-var! (var &optional (debug-val t) (level 1))
     "Set VAR to DEBUG-VAL (or `t') when `doom-debug-mode' is active at >=LEVEL."
-    (setf (alist-get var doom-debug--variables) (cons debug-val level))))
+    (setf (alist-get var doom-debug--variables) (list debug-val level))))
 
 (defvar doom-debug--unbound-variables nil)
 
@@ -34,22 +34,31 @@
     (mapc #'doom-debug--set-var vars)))
 
 (defun doom-debug--set-var (spec)
-  (cond ((listp spec)
+  (cond ((consp spec)
          (pcase-let ((`(,var ,val ,level) spec))
-           (if (boundp var)
-               (set-default-toplevel-value
-                var (if (or (not doom-debug-mode)
-                            (> (or level 1) doom-log-level))
-                        (prog1 (get var 'initial-value)
-                          (put var 'initial-value nil))
-                      (doom-log 3 "debug:vars: %s = %S" var val)
-                      (put var 'initial-value (default-toplevel-value var))
-                      val))
-             (add-to-list 'doom-debug--unbound-variables spec))))
+           (cond ((null var))
+                 ((boundp var)
+                  (if (or (not doom-debug-mode)
+                          (> (or level 1) doom-log-level))
+                      ;; Restore the variable only if we set it earlier; the
+                      ;; stash is absent for variables registered after
+                      ;; `doom-debug-mode' was last enabled.
+                      (when-let* ((stash (get var 'doom-debug--initial-value)))
+                        (put var 'doom-debug--initial-value nil)
+                        (set-default-toplevel-value var (car stash)))
+                    (doom-log 3 "debug:vars: %s = %S" var val)
+                    ;; Don't restash on repeat calls, or the debug value would
+                    ;; overwrite the user's original value.
+                    (unless (get var 'doom-debug--initial-value)
+                      (put var 'doom-debug--initial-value
+                           (list (default-toplevel-value var))))
+                    (set-default-toplevel-value var val)))
+                 ((add-to-list 'doom-debug--unbound-variables spec)))))
+        ((null spec))
         ((boundp spec)
          (doom-log 3 "debug:vars: %s = %S" spec doom-debug-mode)
          (set-default-toplevel-value spec doom-debug-mode))
-        ((add-to-list 'doom-debug--unbound-variables (cons spec t)))))
+        ((add-to-list 'doom-debug--unbound-variables (list spec t)))))
 
 (defun doom-debug--timestamped-message-a (format-string &rest _args)
   "Advice to run before `message' that prepends a timestamp to each message."
