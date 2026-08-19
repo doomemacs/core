@@ -93,7 +93,7 @@ Doesn't work in terminal Emacs."
                               remap-xlfd
                             (purecopy font))
                           (error "Could not decompose %s font" var))))
-                (let* ((step      (if fixed-size-p 0 (* increment doom-font-increment)))
+                (let* ((step      (if fixed-size-p 0 increment))
                        (orig-size (font-get font :size))
                        (new-size  (if fixed-size-p increment (+ orig-size step))))
                   (cond ((<= new-size 0)
