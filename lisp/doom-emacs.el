@@ -382,8 +382,8 @@ Otherwise, `en/disable-command' (in novice.el.gz) is hardcoded to write them to
 ;; Trust the contents of $EMACSDIR and $DOOMDIR, because the user will likely be
 ;; working with either/both.
 (when (boundp 'trusted-content)
-  (add-to-list 'trusted-content (file-truename doom-emacs-dir))
-  (add-to-list 'trusted-content (file-truename doom-user-dir)))
+  (add-to-list 'trusted-content (abbreviate-file-name (file-truename doom-emacs-dir)))
+  (add-to-list 'trusted-content (abbreviate-file-name (file-truename doom-user-dir))))
 
 ;; Ensure .dir-locals.el in $EMACSDIR and $DOOMDIR are always respected
 (add-to-list 'safe-local-variable-directories doom-emacs-dir)
