@@ -20,7 +20,7 @@
 ;; when it's idle. However, if the idle delay is too long, we run the risk of
 ;; runaway memory usage in busy sessions. And if it's too low, then we may as
 ;; well not be using gcmh at all.
-(use-package! gcmh-mode
+(use-package! gcmh
   :unless (fboundp 'igc-info)
   :hook (doom-first-buffer . gcmh-mode)
   :config
