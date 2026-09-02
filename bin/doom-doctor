@@ -221,7 +221,7 @@ in."
         (doom-startup)
         (require 'straight)
 
-        (print! (success "Initialized Doom Emacs %s") doom-version)
+        (print! (success "Initialized Doom Emacs %s") (doom-version))
         (print!
          (if (hash-table-p doom-modules)
              (success "Detected %d modules" (hash-table-count doom-modules))
