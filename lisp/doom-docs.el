@@ -825,10 +825,12 @@ This primes `org-mode' for reading."
            (propertize "Key sequence:" 'face 'bold)
            (doom-docs-link--kbd key t)))
 
-(defun doom-docs-link--kbd-activate-func (beg end key _bracketed?)
+(defun doom-docs-link--kbd-activate-func (beg end _path _bracketed?)
   (if (not org-descriptive-links)
       (remove-text-properties beg end '(display nil))
-    (let* ((keystr (doom-docs-link--kbd key))
+    (let* ((context (doom-docs-context-at-pos beg))
+           (key (doom-docs--get-link-description context))
+           (keystr (doom-docs-link--kbd key))
            (total (max 0 (- (string-width key)
                             (string-width keystr))))
            (keybeg (save-excursion
