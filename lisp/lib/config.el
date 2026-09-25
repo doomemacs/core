@@ -62,6 +62,7 @@
           (lambda (_buf status)
             (if (equal status "finished\n")
                 (progn
+                  (use-local-map (make-composed-keymap nil (current-local-map)))
                   (local-set-key "q" #'quit-window)
                   (with-current-buffer "*scratch*" ,on-success))
               ,on-failure))
