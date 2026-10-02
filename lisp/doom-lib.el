@@ -379,7 +379,8 @@ Return non-nil if loading the file succeeds."
                      (doom-module-error  ,@(cdr doom-module-load-path)))
                 if (cl-find-if (lambda (dir) (file-in-directory-p path dir)) dirs)
                 do (signal err (list (file-relative-name path (expand-file-name "../" it))
-                                     e)))))))
+                                     e))
+                finally (signal (car e) (cdr e)))))))
 
 (defun doom-require (feature &optional filename noerror)
   "Like `require', but handles and enhances Doom errors.
