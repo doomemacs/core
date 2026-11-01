@@ -231,10 +231,11 @@ in."
 
         (let ((envvar-file (doom-profile-dir t doom-profile-init-dir-name "05-doom-env.load.el")))
           (when (and (file-exists-p envvar-file)
-                     (not (equal (get 'exec-path 'initial-value)
-                                 (let (process-environment exec-path shell-file-name)
-                                   (load envvar-file t t)
-                                   exec-path))))
+                     (let ((normalize (lambda (dirs) (mapcar #'directory-file-name (remq nil dirs)))))
+                       (not (equal (funcall normalize (get 'exec-path 'initial-value))
+                                   (let (process-environment exec-path shell-file-name)
+                                     (load envvar-file t t)
+                                     (funcall normalize exec-path))))))
             (warn! "Your $PATH has changed since you last generated your envvar file!")
             (explain! "Run `doom sync' to regenerate your envvar file. Or run `doom sync -r' to only "
                       "regenerate your profile files without syncing your modules/packages/etc (much "
