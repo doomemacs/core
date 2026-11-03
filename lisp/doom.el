@@ -40,17 +40,16 @@
 ;;     > $EMACSDIR/lisp/doom.el
 ;;       - $EMACSDIR/lisp/doom-lib.el
 ;;       - $DOOMDIR/init.el
-;;       - $EMACSDIR/lisp/doom-emacs.el
 ;;       - hook: `doom-before-init-hook'
 ;;   - $EMACSDIR/user-lisp/.user-lisp-autoloads.el  (see `user-lisp-directory')
 ;;   - hook: `before-init-hook'
 ;;   > $XDG_DATA_HOME/doom/$PROFILE/@/$VERSION/init.el   (replaces $EMACSDIR/init.el)
-;;     - $EMACSDIR/doom-{keybinds,ui,projects,editor}.el
+;;     - $EMACSDIR/doom-emacs.el
 ;;     - hook: `doom-before-modules-init-hook'
-;;     - {$DOOMDIR,$EMACSDIR}/modules/*/*/init.el
+;;     - {$DOOMDIR,$EMACSDIR}/{,sources/*/}modules/*/*/init.el
 ;;     - hook: `doom-after-modules-init-hook'
 ;;     - hook: `doom-before-modules-config-hook'
-;;     - {$DOOMDIR,$EMACSDIR}/modules/*/*/config.el
+;;     - {$DOOMDIR,$EMACSDIR}/{,sources/*/}modules/*/*/config.el
 ;;     - hook: `doom-after-modules-config-hook'
 ;;     - $DOOMDIR/config.el
 ;;     - `custom-file' or $DOOMDIR/custom.el
