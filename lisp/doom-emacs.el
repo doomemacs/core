@@ -123,8 +123,8 @@ Is either a symbol representing the name of an Emacs theme, or a cons cell in
 the format of (DARK-THEME . LIGHT-THEME). At startup, Doom tries to determine if
 the system is in dark mode (see `doom--dark-mode-p' for its methods).
 
-Set to `nil' to load no theme at all. This variable is changed by `load-theme'
-and `enable-theme'."
+Set to nil to load no theme at all. This variable is changed by `load-theme' and
+`enable-theme'."
   :type '(choice symbol (cons symbol symbol))
   :group 'doom)
 
@@ -301,27 +301,28 @@ Otherwise, `en/disable-command' (in novice.el.gz) is hardcoded to write them to
 ;; Emacs is essentially one huge security vulnerability, what with all the
 ;; dependencies it pulls in from all corners of the globe. Let's try to be a
 ;; *little* more discerning.
-(setq gnutls-verify-error noninteractive
-      gnutls-algorithm-priority
-      (when (boundp 'libgnutls-version)
-        (concat "SECURE128:+SECURE192:-VERS-ALL"
-                (if (and (not doom--system-windows-p)
-                         (>= libgnutls-version 30605))
-                    ":+VERS-TLS1.3")
-                ":+VERS-TLS1.2"))
-      ;; `gnutls-min-prime-bits' is set based on recommendations from
-      ;; https://www.keylength.com/en/4/
-      gnutls-min-prime-bits 3072
-      tls-checktrust gnutls-verify-error
-      ;; Emacs is built with gnutls.el by default, so `tls-program' won't
-      ;; typically be used, but in the odd case that it does, we ensure a more
-      ;; secure default for it (falling back to `openssl' if absolutely
-      ;; necessary). See https://redd.it/8sykl1 for details.
-      tls-program '("openssl s_client -connect %h:%p -CAfile %t -nbio -no_ssl3 -no_tls1 -no_tls1_1 -ign_eof"
-                    "gnutls-cli -p %p --dh-bits=3072 --ocsp --x509cafile=%t \
+(with-no-warnings
+  (setq gnutls-verify-error noninteractive
+        gnutls-algorithm-priority
+        (when (boundp 'libgnutls-version)
+          (concat "SECURE128:+SECURE192:-VERS-ALL"
+                  (if (and (not doom--system-windows-p)
+                           (>= libgnutls-version 30605))
+                      ":+VERS-TLS1.3")
+                  ":+VERS-TLS1.2"))
+        ;; `gnutls-min-prime-bits' is set based on recommendations from
+        ;; https://www.keylength.com/en/4/
+        gnutls-min-prime-bits 3072
+        tls-checktrust gnutls-verify-error
+        ;; Emacs is built with gnutls.el by default, so `tls-program' won't
+        ;; typically be used, but in the odd case that it does, we ensure a more
+        ;; secure default for it (falling back to `openssl' if absolutely
+        ;; necessary). See https://redd.it/8sykl1 for details.
+        tls-program '("openssl s_client -connect %h:%p -CAfile %t -nbio -no_ssl3 -no_tls1 -no_tls1_1 -ign_eof"
+                      "gnutls-cli -p %p --dh-bits=3072 --ocsp --x509cafile=%t \
 --strict-tofu --priority='SECURE192:+SECURE128:-VERS-ALL:+VERS-TLS1.2:+VERS-TLS1.3' %h"
-                    ;; compatibility fallbacks
-                    "gnutls-cli -p %p %h"))
+                      ;; compatibility fallbacks
+                      "gnutls-cli -p %p %h")))
 
 ;; DEPRECATED: Interactive sessions won't be able to interact with Straight
 ;;   (or Elpaca) in the future, so this is temporary.
@@ -781,20 +782,21 @@ A few places use the backup file name so paths don't get too long."
 ;;
 ;;; * Keybind config
 
-(cond
- (doom--system-macos-p
-  ;; mac-* variables are used by the special emacs-mac build of Emacs by
-  ;; Yamamoto Mitsuharu, while other builds use ns-*.
-  (setq mac-command-modifier      'super
-        ns-command-modifier       'super
-        mac-option-modifier       'meta
-        ns-option-modifier        'meta
-        ;; Free up the right option for character composition
-        mac-right-option-modifier 'none
-        ns-right-option-modifier  'none))
- (doom--system-windows-p
-  (setq w32-lwindow-modifier 'super
-        w32-rwindow-modifier 'super)))
+(with-no-warnings  ; silence warnings about undefined vars
+  (cond
+   (doom--system-macos-p
+    ;; mac-* variables are used by the special emacs-mac build of Emacs by
+    ;; Yamamoto Mitsuharu, while other builds use ns-*.
+    (setq mac-command-modifier      'super
+          ns-command-modifier       'super
+          mac-option-modifier       'meta
+          ns-option-modifier        'meta
+          ;; Free up the right option for character composition
+          mac-right-option-modifier 'none
+          ns-right-option-modifier  'none))
+   (doom--system-windows-p
+    (setq w32-lwindow-modifier 'super
+          w32-rwindow-modifier 'super))))
 
 ;; HACK: Emacs can't distinguish C-i from TAB, or C-m from RET, in either GUI or
 ;;   TTY frames. This is a byproduct of its history with the terminal, which
