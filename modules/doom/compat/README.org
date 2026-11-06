@@ -32,16 +32,16 @@ section below.
 
 ** Module flags
 - -better-jumper ::
-  Don't install or configure ~better-jumper~.
+  Don't install or configure [[pkg:better-jumper]].
 - -general ::
-  Don't install ~general~ and don't provide the ~map!~ macro.
+  Don't install [[pkg:general]] and don't provide the [[fns:map!]] macro.
 - -projectile ::
-  Don't install or configure ~projectile~.
+  Don't install or configure [[pkg:projectile]].
 - -smartparens ::
-  Don't install or configure ~smartparens~.
+  Don't install or configure [[pkg:smartparens]].
 - -use-package ::
-  Don't install or configure ~use-package~, or define ~use-package!~ or
-  ~use-package-hook!~.
+  Don't install or configure [[pkg:use-package]], or define [[fns:use-package!]] or
+  [[fns:use-package-hook!]].
 
 ** Packages
 - [[package:better-jumper]] unless [[module:-better-jumper]]
@@ -62,34 +62,34 @@ released, this can't be changed.
 /This module's configuration documentation is incomplete./ [[doom-contrib-module:][Complete it?]]
 #+end_quote
 
-| Syntax                      | Type     | What to use instead                                                       |
-|-----------------------------+----------+---------------------------------------------------------------------------|
-| IS-MAC                      | var      | ~(featurep :system 'macos)~                                                 |
-| IS-LINUX                    | var      | ~(featurep :system 'linux)~                                                 |
-| IS-WINDOWS                  | var      | ~(featurep :system 'windows)~                                               |
-| IS-BSD                      | var      | ~(featurep :system 'bsd)~                                                   |
-| EMACS28+                    | var      | ~(>= emacs-major-version 28)~                                               |
-| EMACS29+                    | var      | ~(>= emacs-major-version 29)~                                               |
-| MODULES                     | var      | ~(bound-and-true-p module-file-suffix)~                                     |
-| NATIVECOMP                  | var      | ~(featurep 'native-compile)~                                                |
-| doom-private-dir            | var      | ~doom-user-dir~                                                             |
-| doom-etc-dir                | var      | ~doom-data-dir~ or ~doom-profile-data-dir~                                    |
-| ~(featurep 'dynamic-modules)~ | form     | ~(bound-and-true-p module-file-suffix)~                                     |
-| ~(featurep 'jansson)~         | form     | ~(fboundp #'json-parse-string)~                                             |
-| ~(featurep 'harfbuzz)~        | form     | ~(string-match-p "HARFBUZZ" system-configuration-features)~                 |
-| ~featurep!~                   | macro    | ~modulep!~                                                                  |
-| ~letenv!~                     | macro    | ~with-environment-variables~                                                |
-| ~eval-if!~                    | macro    | ~static-if~                                                                 |
-| ~eval-when!~                  | macro    | ~static-when~                                                               |
-| ~setq!~                       | macro    | ~setopt~                                                                    |
-| ~doom-enlist~                 | function | ~ensure-list~                                                               |
-| ~appendq!~                    | macro    | ~(cl-callf append VAR LISTS...)~                                            |
-| ~prependq!~                   | macro    | ~(cl-callf2 append LISTS... VAR)~                                           |
-| ~delq!~                       | macro    | ~(cl-callf2 delq 'KEY ALIST)~ or ~(setf (alist-get 'KEY ALIST nil t) nil)~    |
-| ~pushnew!~                    | macro    | ~add-to-list~ or ~cl-pushnew~ in a loop                                       |
-| ~use-package!~                | macro    | ~use-package~                                                               |
-| ~def-project-mode!~           | macro    | (no alternative yet)                                                      |
-| ~map!~                        | macro    | ~define-key!~, ~keymap-set~, ~define-key~, ~global-set-key~, ~evil-define-key~, etc |
+| Syntax                      | Type     | What to use instead                                                                           |
+|-----------------------------+----------+-----------------------------------------------------------------------------------------------|
+| IS-MAC                      | var      | ~(featurep :system 'macos)~                                                                     |
+| IS-LINUX                    | var      | ~(featurep :system 'linux)~                                                                     |
+| IS-WINDOWS                  | var      | ~(featurep :system 'windows)~                                                                   |
+| IS-BSD                      | var      | ~(featurep :system 'bsd)~                                                                       |
+| EMACS28+                    | var      | ~(>= emacs-major-version 28)~                                                                   |
+| EMACS29+                    | var      | ~(>= emacs-major-version 29)~                                                                   |
+| MODULES                     | var      | ~(bound-and-true-p module-file-suffix)~                                                         |
+| NATIVECOMP                  | var      | ~(featurep 'native-compile)~                                                                    |
+| doom-private-dir            | var      | [[var:doom-user-dir]]                                                                             |
+| doom-etc-dir                | var      | [[var:doom-data-dir]] or [[var:doom-profile-data-dir]]                                                |
+| ~(featurep 'dynamic-modules)~ | form     | ~(bound-and-true-p module-file-suffix)~                                                         |
+| ~(featurep 'jansson)~         | form     | ~(fboundp #'json-parse-string)~                                                                 |
+| ~(featurep 'harfbuzz)~        | form     | ~(string-match-p "HARFBUZZ" system-configuration-features)~                                     |
+| [[fns:featurep!]]               | macro    | [[fns:modulep!]]                                                                                  |
+| [[fns:letenv!]]                 | macro    | [[fns:with-environment-variables]]                                                                |
+| [[fns:eval-if!]]                | macro    | [[fns:static-if]]                                                                                 |
+| [[fns:eval-when!]]              | macro    | [[fns:static-when]]                                                                               |
+| [[fns:setq!]]                   | macro    | [[fns:setopt]]                                                                                    |
+| [[fns:doom-enlist]]             | function | [[fns:ensure-list]]                                                                               |
+| [[fns:appendq!]]                | macro    | ~(cl-callf append VAR LISTS...)~                                                                |
+| [[fns:prependq!]]               | macro    | ~(cl-callf2 append LISTS... VAR)~                                                               |
+| [[fns:delq!]]                   | macro    | ~(cl-callf2 delq 'KEY ALIST)~ or ~(setf (alist-get 'KEY ALIST nil t) nil)~                        |
+| [[fns:pushnew!]]                | macro    | [[fns:add-to-list]] or [[fns:cl-pushnew]] in a loop                                                   |
+| [[fns:use-package!]]            | macro    | [[fns:use-package]]                                                                               |
+| [[fns:def-project-mode!]]       | macro    | (no alternative yet)                                                                          |
+| [[fns:map!]]                    | macro    | [[fns:define-key!]], [[fns:keymap-set]], [[fns:define-key]], [[cmd:global-set-key]], [[fns:evil-define-key]], etc |
 
 There are in-depth examples for some of these in =docs/examples.org= in this
 module.
