@@ -1092,15 +1092,17 @@ windows, switch to `doom-fallback-buffer'. Otherwise, delegate to original
              (dlet ((inhibit-redisplay t)
                     buffer-list-update-hook
                     kill-buffer-query-functions)
-               (when (or
-                      ;; if there aren't more real buffers than visible buffers,
-                      ;; then there are no real, non-visible buffers left.
-                      (not (cl-set-difference (doom-real-buffer-list)
-                                              (doom-visible-buffers nil t)))
-                      ;; if we end up back where we start (or previous-buffer
-                      ;; returns nil), we have nowhere left to go
-                      (memq (switch-to-prev-buffer nil t) (list buf 'nil)))
-                 (switch-to-buffer (doom-fallback-buffer)))
+               (if (window-dedicated-p)
+                   (delete-window)
+                 (when (or
+                        ;; if there aren't more real buffers than visible buffers,
+                        ;; then there are no real, non-visible buffers left.
+                        (not (cl-set-difference (doom-real-buffer-list)
+                                                (doom-visible-buffers nil t)))
+                        ;; if we end up back where we start (or previous-buffer
+                        ;; returns nil), we have nowhere left to go
+                        (memq (switch-to-prev-buffer nil t) (list buf 'nil)))
+                   (switch-to-buffer (doom-fallback-buffer))))
                (unless visible-p
                  (with-current-buffer buf
                    (restore-buffer-modified-p nil))
