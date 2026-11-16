@@ -258,6 +258,16 @@ if (@($mf.wsl).Count -and $mf.wsl) {
         exit 1
     }
 }
+if (Test-Path -LiteralPath (Join-Path $mf.installRoot 'font-state.json')) {
+    try {
+        . (Join-Path $scriptDir 'font-integration.ps1')
+        Remove-DoomFonts -Root $mf.installRoot
+    } catch {
+        Write-Bad "Font cleanup failed: $($_.Exception.Message)"
+        Write-Info 'Font files and installation metadata were kept for review or retry.'
+        exit 1
+    }
+}
 $failed = 0
 $deferredPaths = @(
     $manifestPath,

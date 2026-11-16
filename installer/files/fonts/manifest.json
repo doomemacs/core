@@ -1,0 +1,30 @@
+{
+    "fonts":  [
+                  {
+                      "file":  "Meslo-v3.5.1/MesloLGMNerdFont-Regular.ttf",
+                      "family":  "MesloLGM Nerd Font",
+                      "sha256":  "40ae698bae08550d467ddb837ccbf0fab867b028030df3f72beb495e3df2685d"
+                  },
+                  {
+                      "file":  "Meslo-v3.5.1/MesloLGMNerdFont-Bold.ttf",
+                      "family":  "MesloLGM Nerd Font",
+                      "sha256":  "4fca6f1bda421f4983c8865f900c810adfb548469efc4a43e1d177a762b56029"
+                  },
+                  {
+                      "file":  "Meslo-v3.5.1/MesloLGMNerdFont-Italic.ttf",
+                      "family":  "MesloLGM Nerd Font",
+                      "sha256":  "7c60fc01f876e1082be117449f2fdb04c6986575666a7f5fb6272623493a9337"
+                  },
+                  {
+                      "file":  "Meslo-v3.5.1/MesloLGMNerdFont-BoldItalic.ttf",
+                      "family":  "MesloLGM Nerd Font",
+                      "sha256":  "c2f6797317ed5ade13894016600d92045041d63c30f0f4c6be9a1b9a0506fb65"
+                  },
+                  {
+                      "file":  "Symbols-v3.5.1/SymbolsNerdFontMono-Regular.ttf",
+                      "family":  "Symbols Nerd Font Mono",
+                      "sha256":  "fe471e538392f51910faab985fa8e192a39dd3426125edd15b71b3680df0e749"
+                  }
+              ],
+    "schema":  1
+}

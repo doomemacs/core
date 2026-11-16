@@ -1,4 +1,4 @@
-﻿{
+{
     "_comment":  [
                      "Pinned payloads for the Doom Emacs Windows installer.",
                      "sha256 null means not yet pinned: run fetch-payloads.ps1 -Update to download and pin.",
@@ -124,6 +124,66 @@
                          "publishedDigestKind":  null,
                          "stripRoot":  true,
                          "installSubdir":  "emacs"
+                     },
+                     {
+                         "id":  "meslo-font",
+                         "description":  "MesloLGM Nerd Font, four styles, with upstream notices. Release digest cross-checked through the official GitHub release API.",
+                         "version":  "3.5.1",
+                         "url":  "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/Meslo.zip",
+                         "filename":  "Meslo-v3.5.1.zip",
+                         "expectedBytes":  116387026,
+                         "sha256":  "fb104893ecd8f57e8afacbc0a7086b42657120448d056d6093c728a9afb8e237",
+                         "publishedDigest":  "fb104893ecd8f57e8afacbc0a7086b42657120448d056d6093c728a9afb8e237",
+                         "publishedDigestUrl":  null,
+                         "publishedDigestKind":  null,
+                         "stripRoot":  false,
+                         "installSubdir":  "fonts/Meslo-v3.5.1",
+                         "files":  [
+                                       "MesloLGMNerdFont-Regular.ttf",
+                                       "MesloLGMNerdFont-Bold.ttf",
+                                       "MesloLGMNerdFont-Italic.ttf",
+                                       "MesloLGMNerdFont-BoldItalic.ttf",
+                                       "LICENSE.txt",
+                                       "README.md"
+                                   ]
+                     },
+                     {
+                         "id":  "symbols-font",
+                         "description":  "Symbols Nerd Font Mono used by nerd-icons. Release digest cross-checked through the official GitHub release API.",
+                         "version":  "3.5.1",
+                         "url":  "https://github.com/ryanoasis/nerd-fonts/releases/download/v3.5.1/NerdFontsSymbolsOnly.zip",
+                         "filename":  "NerdFontsSymbolsOnly-v3.5.1.zip",
+                         "expectedBytes":  3055824,
+                         "sha256":  "fdca3682534f6f65e1ccb2345b0362ccf67d9b8eca7c8025330946e93e2473bc",
+                         "publishedDigest":  "fdca3682534f6f65e1ccb2345b0362ccf67d9b8eca7c8025330946e93e2473bc",
+                         "publishedDigestUrl":  null,
+                         "publishedDigestKind":  null,
+                         "stripRoot":  false,
+                         "installSubdir":  "fonts/Symbols-v3.5.1",
+                         "files":  [
+                                       "SymbolsNerdFontMono-Regular.ttf",
+                                       "LICENSE",
+                                       "README.md"
+                                   ]
+                     },
+                     {
+                         "id":  "git-shell-tools",
+                         "description":  "which.exe and cygpath.exe from the exact PortableGit release matching MinGit. Build uses 7-Zip to extract only these files; the SFX is never run.",
+                         "version":  "2.55.0.5",
+                         "url":  "https://github.com/git-for-windows/git/releases/download/v2.55.0.windows.5/PortableGit-2.55.0.5-64-bit.7z.exe",
+                         "filename":  "PortableGit-2.55.0.5-64-bit.7z.exe",
+                         "expectedBytes":  58960208,
+                         "sha256":  "5aa8a20f6e9abb2c755f0e73c91c687701a46b309ad84a0ca6509380fa4ae290",
+                         "publishedDigest":  "5aa8a20f6e9abb2c755f0e73c91c687701a46b309ad84a0ca6509380fa4ae290",
+                         "publishedDigestUrl":  null,
+                         "publishedDigestKind":  null,
+                         "stripRoot":  false,
+                         "installSubdir":  "deps/git",
+                         "files":  [
+                                       "usr/bin/which.exe",
+                                       "usr/bin/cygpath.exe",
+                                       "LICENSE.txt"
+                                   ]
                      }
                  ],
     "buildTools":  [

@@ -126,7 +126,7 @@ if ($Stages -contains 'stage') {
 
     # The install engine and uninstaller ship INSIDE the payload, so the installed
     # copy can remove itself and so a standalone user has both to hand.
-    foreach ($f in @('install-doom.ps1', 'uninstall-doom.ps1', 'env-path.ps1', 'repair-doom.ps1', 'native-process.ps1', 'wsl-integration.ps1', 'package-sync.ps1')) {
+    foreach ($f in @('install-doom.ps1', 'uninstall-doom.ps1', 'env-path.ps1', 'repair-doom.ps1', 'native-process.ps1', 'wsl-integration.ps1', 'package-sync.ps1', 'font-integration.ps1')) {
         Copy-Item (Join-Path $installerDir $f) (Join-Path $StagingDir $f) -Force
     }
     Write-Ok 'install/uninstall scripts and shared PATH helper staged alongside payload'

@@ -12,6 +12,7 @@ $installerDir = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 if (-not $MakeNsis) { $MakeNsis = Join-Path $installerDir 'build\tools\nsis-3.11\makensis.exe' }
 if (-not (Test-Path -LiteralPath $MakeNsis)) { throw 'Pass -MakeNsis with the path to makensis.exe.' }
 . (Join-Path $installerDir 'env-path.ps1')
+. (Join-Path $installerDir 'font-integration.ps1')
 
 $caseId = [guid]::NewGuid().ToString('N')
 $scratch = Join-Path $env:TEMP ('doom-nsis-' + $caseId)
@@ -125,6 +126,21 @@ exit /b 0
     if (-not $manifest.packageSync.success) { throw 'Successful sync did not record its compilation signature.' }
     Write-Host 'PASS: same-runtime reinstall is incremental and AOT is opt-in.'
     Write-Host 'PASS: compiled installer installs/reinstalls its engine, manifest, PATH and uninstall registration.'
+
+    # Font ownership must be checked before NSIS overwrites a modified file.
+    $fontPath=Join-Path $root 'fonts\fixture.ttf'
+    New-Item -ItemType Directory -Path (Split-Path -Parent $fontPath) -Force | Out-Null
+    Set-Content -LiteralPath $fontPath -Value 'owned font' -Encoding ASCII
+    $fontState=Join-Path $root 'font-state.json'
+    @{schema=1;installRoot=$root;entries=@(@{name=(Get-DoomFontRegistryName $root $fontPath);family='Fixture';path=$fontPath;sha256=(Get-FileHash -LiteralPath $fontPath).Hash.ToLower()})} |
+        ConvertTo-Json -Depth 6 | Set-Content -LiteralPath $fontState -Encoding UTF8
+    Set-Content -LiteralPath $fontPath -Value 'user modified this font' -Encoding ASCII
+    $callsBefore=@(Get-Content -LiteralPath (Join-Path $root 'doom\.local\sync-calls.log')).Count
+    $exitCode=Invoke-TestProcess $setup "/S /NoShortcuts /D=$root"
+    if ($exitCode -eq 0 -or (Get-Content -LiteralPath $fontPath -Raw) -notmatch 'user modified') { throw 'Reinstall did not preserve a modified owned font.' }
+    if (@(Get-Content -LiteralPath (Join-Path $root 'doom\.local\sync-calls.log')).Count -ne $callsBefore) { throw 'Reinstall continued after a font ownership conflict.' }
+    Remove-Item -LiteralPath $fontState,$fontPath
+    Write-Host 'PASS: compiled setup blocks a font ownership conflict before extraction/configuration.'
 
     # Model the actual broken release, including an unrelated root file to preserve.
     [void](Remove-DoomUserPathEntry -Entry $binDir)

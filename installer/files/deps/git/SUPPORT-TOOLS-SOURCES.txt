@@ -1,0 +1,16 @@
+Additional Git shell utilities
+
+which.exe and cygpath.exe come unchanged from PortableGit 2.55.0.5 x86_64:
+https://github.com/git-for-windows/git/releases/tag/v2.55.0.windows.5
+
+The archive and its SHA-256 are recorded in the installer payload lockfile.
+The matching MinGit distribution provides their MSYS runtime.
+
+Upstream projects and source repositories:
+GNU which: https://savannah.gnu.org/projects/which/
+Git for Windows MSYS2 runtime (cygpath):
+https://github.com/git-for-windows/msys2-runtime
+
+See LICENSE.txt and GPL-3.0.txt for the included license texts. This notice
+identifies sources; release-wide corresponding-source/redistribution review
+remains required before distributing this experimental installer publicly.

@@ -6,7 +6,7 @@ specific patches. Initial package synchronization requires internet access.
 
 * Build
 
-Requirements: Windows 10 or newer, Windows PowerShell 5.1, Git, NSIS 3.11 or newer,
+Requirements: Windows 10 or newer, Windows PowerShell 5.1, Git, 7-Zip, NSIS 3.11 or newer,
 and approximately 4 GB free for archives, staging and installer output. Build
 tools and archives are ignored by Git; do not commit generated executables.
 
@@ -71,6 +71,30 @@ Emacs, MinGit, ripgrep, fd and an MSYS2 UCRT64 native compilation toolchain. Onl
 the root's =bin= directory is added to the user's PATH. Launchers set their
 environment per process; they do not change a persistent HOME variable.
 
+MinGit is supplemented with =which.exe= and =cygpath.exe= from the matching
+PortableGit release. Magit uses both to discover the native Git executable and
+translate its MSYS PATH. The archive is hash-pinned and extracted with 7-Zip;
+its self-extracting executable is never run. Runtime tests remove host Git tools
+from PATH so a full Git installation cannot hide missing bundled utilities.
+
+The optional, initially selected font component includes four MesloLGM Nerd Font
+styles and Symbols Nerd Font Mono from Nerd Fonts v3.5.1, with upstream license
+notices. Only these files are extracted from the pinned release archives.
+=nerd-icons= uses Symbols Nerd Font Mono independently of the editor's text font.
+New configurations select Meslo at 12 points; existing configurations and themes
+are kept. Font size/theme remain user preferences, not upgrade migrations.
+
+Font files stay under =INSTALL_ROOT/fonts= in versioned folders. Missing families
+are registered for the current Windows user at
+=HKCU\Software\Microsoft\Windows NT\CurrentVersion\Fonts= and loaded for the
+current session. Existing families are not replaced or adopted. =font-state.json=
+records our exact registry values, paths and hashes before registration.
+Uninstall removes only still-matching owned values, keeping unrelated/replaced
+values and existing fonts. Changed owned font files block reinstall before
+extraction, and block removal for review. Clearing the font component or passing
+=-NoFonts= to the engine preserves existing registrations. Applications already
+running may need to restart to refresh their font cache.
+
 The default user configuration is =%USERPROFILE%\.config\doom=. Existing files
 are kept. Windows show the full configuration paths, identify a missing folder,
 and separately display an existing =%USERPROFILE%\.doom.d=. They explicitly state
@@ -110,6 +134,10 @@ Run the following with Windows PowerShell 5.1:
 .\installer\test\wsl-bridge-selftest.ps1
 .\installer\test\wsl-selection-selftest.ps1
 .\installer\test\package-sync-selftest.ps1
+.\installer\test\font-integration-selftest.ps1
+# Real bundled shell / Magit dependency checks:
+.\installer\test\git-tools-selftest.ps1 -InstallRoot 'C:\staging'
+.\installer\test\git-tools-selftest.ps1 -InstallRoot 'C:\installed' -CheckMagit
 # Optional real WSL/Windows runtime checks, using temporary Linux homes:
 .\installer\test\wsl-bridge-selftest.ps1 -Distribution Ubuntu
 .\installer\test\windows-client-selftest.ps1 -EmacsRoot 'C:\staging\emacs' -Distribution Ubuntu

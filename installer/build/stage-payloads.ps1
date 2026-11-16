@@ -70,7 +70,7 @@ function Get-ZipCommonRoot {
 }
 
 function Expand-ZipPayload {
-    param([string]$Archive, [string]$Dest, [bool]$LockSaysStrip)
+    param([string]$Archive, [string]$Dest, [bool]$LockSaysStrip, [string[]]$Files)
 
     $zip = [System.IO.Compression.ZipFile]::OpenRead($Archive)
     try {
@@ -89,6 +89,7 @@ function Expand-ZipPayload {
                 $rel = $rel.TrimStart('/')
             }
             if (-not $rel) { continue }
+            if ($Files -and $Files -cnotcontains $rel) { continue }
             $out = Join-Path $Dest ($rel -replace '/', '\')
 
             if ($e.Length -eq 0 -and $e.FullName.EndsWith('/')) {
@@ -135,6 +136,20 @@ function Expand-Msys2Payload {
 
     $after = (Get-ChildItem $Dest -Recurse -File -ErrorAction SilentlyContinue | Measure-Object).Count
     return ($after - $before)
+}
+
+function Expand-PortableGitTools {
+    param([string]$Archive, [string]$Dest, [string[]]$Files)
+    $sevenZip = Get-Command 7z.exe -ErrorAction SilentlyContinue
+    $programFilesZip = Join-Path $env:ProgramFiles '7-Zip\7z.exe'
+    $exe = if ($sevenZip) { $sevenZip.Source } elseif (Test-Path -LiteralPath $programFilesZip) { $programFilesZip } else { throw '7-Zip is required to extract the pinned PortableGit support tools.' }
+    # Extract as an archive; never execute PortableGit's self-extracting program.
+    & $exe x -y -bso0 -bsp0 "-o$Dest" $Archive @Files
+    if ($LASTEXITCODE) { throw "PortableGit support extraction failed ($LASTEXITCODE)." }
+    foreach ($file in $Files) {
+        if (-not (Test-Path -LiteralPath (Join-Path $Dest $file))) { throw "PortableGit tool missing: $file" }
+    }
+    return $Files.Count
 }
 
 # ---------------------------------------------------------------------- main
@@ -186,7 +201,9 @@ foreach ($p in $lock.payloads) {
         if (-not (Test-Path $dest)) { New-Item -ItemType Directory -Force -Path $dest | Out-Null }
 
         if ($p.filename -like '*.zip') {
-            $n = Expand-ZipPayload -Archive $archive -Dest $dest -LockSaysStrip ([bool]$p.stripRoot)
+            $n = Expand-ZipPayload -Archive $archive -Dest $dest -LockSaysStrip ([bool]$p.stripRoot) -Files $p.files
+        } elseif ($p.filename -like '*.7z.exe') {
+            $n = Expand-PortableGitTools -Archive $archive -Dest $dest -Files $p.files
         } elseif ($p.filename -like '*.pkg.tar.zst') {
             $n = Expand-Msys2Payload -Archive $archive -Dest $dest -Zstd $zstd
         } else {
@@ -322,6 +339,10 @@ $checks = @(
     @{ path = 'deps\fd\fd.exe';             why = 'doom-doctor soft dependency' },
     @{ path = 'deps\git\cmd\git.exe';       why = 'doom-doctor hard dependency' },
     @{ path = 'deps\git\usr\bin\sh.exe';    why = 'lets bin/doom run without Git Bash installed' },
+    @{ path = 'deps\git\usr\bin\which.exe'; why = 'Magit Git for Windows executable discovery' },
+    @{ path = 'deps\git\usr\bin\cygpath.exe'; why = 'Magit Windows/MSYS path conversion' },
+    @{ path = 'fonts\Meslo-v3.5.1\MesloLGMNerdFont-Regular.ttf'; why = 'bundled editor font' },
+    @{ path = 'fonts\Symbols-v3.5.1\SymbolsNerdFontMono-Regular.ttf'; why = 'nerd-icons glyph font' },
     @{ path = 'doom\bin\doom';              why = 'the Doom CLI itself' },
     @{ path = 'doom\lisp\doom.el';          why = 'Doom core' },
     @{ path = 'doom\sources\doom+\modules'; why = 'the module tree (submodule)' },

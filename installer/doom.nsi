@@ -165,6 +165,15 @@ VIAddVersionKey "CompanyName"     "${PUBLISHER}"
 ; ---------------------------------------------------------------------------
 
 Function GuardInstallPath
+  ${If} ${FileExists} "$INSTDIR\font-state.json"
+    nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -NonInteractive -File "$PLUGINSDIR\font-integration.ps1" -CheckInstallRoot "$INSTDIR"'
+    Pop $0
+    ${If} $0 != 0
+      MessageBox MB_ICONSTOP "Installed font files or ownership metadata were changed. Setup stopped before copying payload files; review the details above." /SD IDOK
+      SetErrorLevel 1
+      Abort
+    ${EndIf}
+  ${EndIf}
   ; Never merge into an arbitrary non-empty folder. The uninstaller removes an
   ; installer-owned tree recursively, so accepting one here could delete files
   ; that Doom did not create. A manifest identifies a Doom reinstall and is safe.
@@ -335,7 +344,7 @@ Function un.ConfigLocationCreate
   ${If} $WslCommandPath != ""
     !insertmacro LocationField "Managed WSL command directory to remove:" "$WslCommandPath" 93u 105u
   ${EndIf}
-  ${NSD_CreateLabel} 0 128u 100% 27u "Configuration files stay in place. No backup copy is created. Managed Windows/WSL PATH entries and bundled tools are removed."
+  ${NSD_CreateLabel} 0 128u 100% 27u "Configuration and preexisting fonts stay in place. Bundled tools and owned Windows/WSL PATH and font registrations are removed."
   Pop $0
   GetDlgItem $0 $HWNDPARENT 1
   SendMessage $0 ${WM_SETTEXT} 0 "STR:Uninstall"
@@ -421,6 +430,7 @@ Function .onInit
   File "native-process.ps1"
   File "wsl-integration.ps1"
   File "package-sync.ps1"
+  File "font-integration.ps1"
   SetOutPath "$PLUGINSDIR\bridge"
   File /r "files\bridge\*.*"
   SetOutPath "$PLUGINSDIR"
@@ -517,6 +527,9 @@ SectionEnd
 Section /o "Native pre-compilation (slower setup, optional)" SecAOT
 SectionEnd
 
+Section "Meslo and Nerd Icons fonts (current user)" SecFonts
+SectionEnd
+
 Section "Desktop shortcut" SecDesktop
 SectionEnd
 
@@ -540,6 +553,9 @@ Function InstallSummaryCreate
   ${If} $WslDistro != ""
     StrCpy $1 "WSL distribution: $WslDistro. Adds Windows doom and doom-wsl commands and marked Linux shell PATH blocks.$\r$\n"
   ${EndIf}
+  ${If} ${SectionIsSelected} ${SecFonts}
+    StrCpy $1 "$1Fonts: $INSTDIR\fonts. Registers under HKCU\Software\Microsoft\Windows NT\CurrentVersion\Fonts; existing families kept.$\r$\n"
+  ${EndIf}
   ; Keep the footer inside the 150-DU page. Wrap long distro names and allow
   ; scrolling at larger text sizes instead of clipping a fixed-height label.
   nsDialogs::CreateControl EDIT ${DEFAULT_STYLES}|${WS_TABSTOP}|${ES_MULTILINE}|${ES_AUTOVSCROLL}|${ES_READONLY}|${WS_VSCROLL} ${WS_EX_CLIENTEDGE} 0 106u 100% 44u "$1Uninstall through setup or Windows Settings. Deleting the folder leaves integration behind. Provided AS IS, without warranty; see LICENSE and bundled licenses."
@@ -551,6 +567,9 @@ FunctionEnd
 Section "-Configure" SecConfigure
   ; Translate the component choices into engine flags.
   StrCpy $R0 ""
+  ${IfNot} ${SectionIsSelected} ${SecFonts}
+    StrCpy $R0 "$R0 -NoFonts"
+  ${EndIf}
   ${If} $WslDistro != ""
     StrCpy $R0 '$R0 -WslDistro "$WslDistro"'
   ${EndIf}

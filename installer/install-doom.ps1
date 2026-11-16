@@ -48,6 +48,7 @@ param(
     [switch]$NoDesktopShortcut,
     [switch]$NoStartMenuShortcut,
     [switch]$NoSync,
+    [switch]$NoFonts,
     # Native optimization is optional; byte compilation remains mandatory.
     [switch]$AOT,
     [switch]$NoAOT,
@@ -70,6 +71,7 @@ if (-not $scriptDir) { $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.P
 . (Join-Path $scriptDir 'env-path.ps1')
 . (Join-Path $scriptDir 'wsl-integration.ps1')
 . (Join-Path $scriptDir 'package-sync.ps1')
+. (Join-Path $scriptDir 'font-integration.ps1')
 
 # Normalise separators up front. These paths get written into the manifest and
 # later compared with -eq by the uninstaller, so a caller passing forward slashes
@@ -149,6 +151,7 @@ if (-not $explicitDoomDir -and $previousManifest.doomDir) {
 if ($existing -and -not $Force) {
     throw "An existing install was found at $InstallRoot. Uninstall it first, or pass -Force to overwrite."
 }
+if (Test-Path -LiteralPath (Join-Path $InstallRoot 'font-state.json')) { [void](Get-DoomFontState $InstallRoot) }
 # Refuse to pour the payload into a folder that already holds something that is
 # not ours. Without this the manifest would tag a user's folder 'preexisting'
 # while robocopy merged 1.4GB into it, and an uninstall that keeps a preexisting
@@ -255,7 +258,7 @@ if ($SourceMode -eq 'InPlace') {
     # stage-payloads.ps1 intentionally stages only the payload. Standalone
     # Staging/Cache/Download installs still need their engine, uninstaller, and
     # shared PATH helper beside the payload, just like the compiled installer.
-    foreach ($name in @('install-doom.ps1', 'uninstall-doom.ps1', 'env-path.ps1', 'repair-doom.ps1', 'native-process.ps1', 'wsl-integration.ps1', 'package-sync.ps1')) {
+    foreach ($name in @('install-doom.ps1', 'uninstall-doom.ps1', 'env-path.ps1', 'repair-doom.ps1', 'native-process.ps1', 'wsl-integration.ps1', 'package-sync.ps1', 'font-integration.ps1')) {
         Copy-Item (Join-Path $scriptDir $name) (Join-Path $InstallRoot $name) -Force
     }
     $bridgeSource = Join-Path $scriptDir 'files\bridge'
@@ -277,7 +280,7 @@ foreach ($d in (Get-ChildItem $InstallRoot -Directory -ErrorAction SilentlyConti
 foreach ($f in (Get-ChildItem $InstallRoot -File -ErrorAction SilentlyContinue)) {
     if ($previousManifest -and -not $rootOwned -and -not @($previousManifest.entries | Where-Object {
         $_.kind -eq 'file' -and $_.path -eq $f.FullName -and $_.state -eq 'created'
-    }).Count -and $f.Name -notin @('install-doom.ps1', 'uninstall-doom.ps1', 'env-path.ps1', 'repair-doom.ps1', 'native-process.ps1', 'wsl-integration.ps1', 'package-sync.ps1')) { continue }
+    }).Count -and $f.Name -notin @('install-doom.ps1', 'uninstall-doom.ps1', 'env-path.ps1', 'repair-doom.ps1', 'native-process.ps1', 'wsl-integration.ps1', 'package-sync.ps1', 'font-integration.ps1')) { continue }
     Add-Entry -Kind 'file' -Path $f.FullName -State 'created'
 }
 $fileCount = (Get-ChildItem $InstallRoot -Recurse -File -ErrorAction SilentlyContinue | Measure-Object).Count
@@ -308,6 +311,13 @@ if ($doomDirExisted) {
             Copy-Item $src (Join-Path $DoomDir ($f -replace '\.example', '')) -Force
             $seeded = $true
         }
+    }
+    if (-not $NoFonts -and (Test-Path -LiteralPath (Join-Path $InstallRoot 'fonts\manifest.json'))) {
+        Add-Content -LiteralPath (Join-Path $DoomDir 'config.el') -Encoding UTF8 -Value @'
+
+;; Windows bundle default; existing configurations are never changed by setup.
+(setq doom-font (font-spec :family "MesloLGM Nerd Font" :size 12 :weight 'medium))
+'@
     }
     Add-Entry -Kind 'dir' -Path $DoomDir -State 'created' -Note 'user config, created by this install'
     if ($seeded) { Write-Ok "seeded $DoomDir from templates" }
@@ -490,6 +500,16 @@ if ($WslDistro) {
 }
 
 # --------------------------------------------------------------- first sync
+
+if (-not $NoFonts -and (Test-Path -LiteralPath (Join-Path $InstallRoot 'fonts\manifest.json'))) {
+    Write-Stage 'Current-user fonts (existing families are kept)'
+    Add-Entry -Kind 'file' -Path (Join-Path $InstallRoot 'font-state.json') -State 'created' -Note 'owned font registry entries'
+    try { [void](Install-DoomFonts -Root $InstallRoot) }
+    finally {
+        $manifest['entries'] = $script:manifestEntries.ToArray()
+        $manifest | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
+    }
+}
 
 if (-not $NoSync) {
     Write-Stage 'Checking package builds'
