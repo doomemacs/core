@@ -6,7 +6,7 @@
     The CLI is a stub: this checks packaging/lifecycle, not Emacs package builds.
 #>
 [CmdletBinding()]
-param([string]$MakeNsis)
+param([string]$MakeNsis, [switch]$KeepArtifacts)
 $ErrorActionPreference = 'Stop'
 $installerDir = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 if (-not $MakeNsis) { $MakeNsis = Join-Path $installerDir 'build\tools\nsis-3.11\makensis.exe' }
@@ -152,9 +152,9 @@ exit /b 0
     [void](Remove-DoomUserPathEntry -Entry $binDir)
     if (Test-Path -LiteralPath $regKey) { Remove-Item -LiteralPath $regKey -Recurse -Force }
     # Scratch is a generated direct child of TEMP, verified before recursive cleanup.
-    if ($passed -and (Split-Path -Parent ([IO.Path]::GetFullPath($scratch))) -eq [IO.Path]::GetFullPath($env:TEMP).TrimEnd('\')) {
+    if ($passed -and -not $KeepArtifacts -and (Split-Path -Parent ([IO.Path]::GetFullPath($scratch))) -eq [IO.Path]::GetFullPath($env:TEMP).TrimEnd('\')) {
         Remove-Item -LiteralPath $scratch -Recurse -Force
-    } elseif (-not $passed) {
+    } else {
         Write-Host "Test artifacts retained at $scratch"
     }
 }

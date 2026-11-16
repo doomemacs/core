@@ -43,7 +43,7 @@ jobs:
           if ($issues.Count) { throw ($issues | Out-String) }
       - name: Check PATH, ownership guards and footprint tooling
         run: |
-          foreach ($name in @('env-path-selftest', 'install-guard-selftest', 'uninstall-plan-selftest', 'diff-selftest')) {
+          foreach ($name in @('env-path-selftest', 'install-guard-selftest', 'uninstall-plan-selftest', 'diff-selftest', 'wsl-bridge-selftest')) {
             & powershell.exe -NoProfile -ExecutionPolicy Bypass -File "./installer/test/$name.ps1"
             if ($LASTEXITCODE) { exit $LASTEXITCODE }
           }

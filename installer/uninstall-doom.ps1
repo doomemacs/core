@@ -192,6 +192,10 @@ foreach ($t in @('git', 'rg', 'fd')) {
 
 # -------------------------------------------------------------------- the nag
 
+foreach ($integration in @($mf.wsl)) {
+    if ($integration) { Add-Plan 'wsl' ("$($integration.distro):$($integration.root)") 'managed WSL commands and PATH blocks (user configuration is kept)' }
+}
+
 Write-Stage 'This will DELETE the following'
 $total = 0
 $userDataPresent = $false
@@ -242,6 +246,18 @@ if (-not $Yes) {
 # ------------------------------------------------------------------- remove
 
 Write-Stage 'Removing'
+# Complete WSL cleanup before deleting the Windows scripts it depends on.
+# An inaccessible distro/disk leaves the manifest and Windows install intact.
+if (@($mf.wsl).Count -and $mf.wsl) {
+    . (Join-Path $scriptDir 'wsl-integration.ps1')
+    try {
+        foreach ($integration in @($mf.wsl)) { Remove-DoomWslIntegration -Entry $integration }
+    } catch {
+        Write-Bad "WSL cleanup failed: $($_.Exception.Message)"
+        Write-Info 'The Windows installation and ownership manifest were kept. Restore access to the distribution and retry.'
+        exit 1
+    }
+}
 $failed = 0
 $deferredPaths = @(
     $manifestPath,
@@ -252,6 +268,7 @@ foreach ($p in $plan) {
     # Keep the manifest, running uninstallers, owned root, and ARP key until
     # every other removal has succeeded. A failure must remain retryable.
     if (($rootOwned -and $p.path -eq $mf.installRoot) -or
+        $p.kind -eq 'wsl' -or
         $p.kind -eq 'regkey' -or
         $deferredPaths -contains $p.path) { continue }
     if ($p.kind -in @('dir', 'file', 'shortcut') -and -not (Test-Path $p.path)) { continue }

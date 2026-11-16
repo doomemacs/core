@@ -147,6 +147,7 @@ are recognized and their removal metadata is recovered automatically.
 The installer and removal windows show the full configuration paths, flag a
 missing configured folder, and list an existing `.doom.d` separately. Keeping
 configuration means leaving those files in place; no backup copy is created.
+Location fields can be selected and copied with Ctrl+A / Ctrl+C.
 
 The installer adds `%LOCALAPPDATA%\Programs\DoomEmacs\bin` (or the selected install
 root's `bin`) to your user PATH. Run `doom doctor` in PowerShell or CMD afterward.
@@ -163,8 +164,10 @@ To inspect recovery of an old incomplete installation without changing it:
 
 The installed Doom tree is a snapshot without `.git`, so `doom upgrade` cannot
 update the framework. Update this Windows bundle by rerunning a newer installer.
-WSL integration is a separate step: this installer configures Windows Emacs and
-Windows commands; it does not install Linux Emacs or a Linux `doom` command.
+The optional WSL page adds `doom` and `doom-wsl` commands to a selected existing
+distribution. They use this Windows installation and configuration. `doom-wsl`
+opens Linux files in the Windows GUI; `--wait` supports editor workflows. See
+the [bridge documentation](installer/README.org) for requirements and cleanup.
 
 ### Standard installation
 

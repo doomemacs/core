@@ -63,6 +63,7 @@ ShowUninstDetails show
 ; Required for ${AtLeastWin10}.
 !include "WinVer.nsh"
 !include "nsDialogs.nsh"
+!include "TextFunc.nsh"
 
 Var RootOwnerArg
 Var ExistingInstall
@@ -70,6 +71,21 @@ Var MaintenanceDialog
 Var RemoveRadio
 Var EngineOptions
 Var ConfigSummary
+Var WslDistro
+Var WslCheck
+Var WslCombo
+Var ConfigPath
+Var LegacyConfigPath
+Var WslCommandPath
+Var ConfigStatus
+
+!macro LocationField LABEL VALUE LABELY FIELDY
+  ${NSD_CreateLabel} 0 ${LABELY} 100% 10u "${LABEL}"
+  Pop $0
+  ${NSD_CreateText} 0 ${FIELDY} 100% 14u "${VALUE}"
+  Pop $0
+  ${NSD_Edit_SetReadOnly} $0 1
+!macroend
 
 !macro LoadConfigSummary ROOT
   InitPluginsDir
@@ -93,6 +109,10 @@ Var ConfigSummary
     StrCpy $ConfigSummary "$ConfigSummary$1"
   ${Loop}
   FileClose $0
+  ReadINIStr $ConfigPath "$PLUGINSDIR\config-info.txt.ini" "paths" "Config"
+  ReadINIStr $ConfigStatus "$PLUGINSDIR\config-info.txt.ini" "paths" "ConfigStatus"
+  ReadINIStr $LegacyConfigPath "$PLUGINSDIR\config-info.txt.ini" "paths" "Legacy"
+  ReadINIStr $WslCommandPath "$PLUGINSDIR\config-info.txt.ini" "paths" "Wsl"
 !macroend
 
 !define MUI_ABORTWARNING
@@ -114,6 +134,8 @@ Page custom ConfigLocationCreate
 !insertmacro MUI_PAGE_COMPONENTS
 !define MUI_PAGE_CUSTOMFUNCTION_LEAVE CheckInstallPath
 !insertmacro MUI_PAGE_DIRECTORY
+Page custom WslCreate WslLeave
+Page custom InstallSummaryCreate
 !insertmacro MUI_PAGE_INSTFILES
 
 !define MUI_FINISHPAGE_TITLE "${PRODUCT} is ready"
@@ -183,6 +205,64 @@ Function LaunchDoom
   Exec '"$INSTDIR\bin\doom-emacs.cmd"'
 FunctionEnd
 
+Function WslToggle
+  Pop $0
+  ${NSD_GetState} $WslCheck $0
+  EnableWindow $WslCombo $0
+FunctionEnd
+
+Function WslCreate
+  !insertmacro MUI_HEADER_TEXT "WSL integration (optional)" "Use Windows Doom and its GUI from a selected Linux distribution."
+  nsDialogs::Create 1018
+  Pop $0
+  ${NSD_CreateCheckbox} 0 0 100% 18u "Enable Windows Doom commands in WSL"
+  Pop $WslCheck
+  ${NSD_OnClick} $WslCheck WslToggle
+  ${NSD_CreateLabel} 0 25u 100% 12u "Choose a registered WSL distribution:"
+  Pop $0
+  ${NSD_CreateDropList} 0 40u 100% 100u ""
+  Pop $WslCombo
+  nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -NonInteractive -File "$PLUGINSDIR\wsl-integration.ps1" -List -OutFile "$PLUGINSDIR\wsl-list.txt"'
+  Pop $0
+  ${If} $0 == 0
+    FileOpen $0 "$PLUGINSDIR\wsl-list.txt" r
+    FileSeek $0 2 SET
+    ${Do}
+      ClearErrors
+      FileReadUTF16LE $0 $1
+      ${If} ${Errors}
+        ${ExitDo}
+      ${EndIf}
+      ${TrimNewLines} $1 $1
+      ${If} $1 != ""
+        ${NSD_CB_AddString} $WslCombo $1
+      ${EndIf}
+    ${Loop}
+    FileClose $0
+  ${EndIf}
+  ${If} $WslDistro != ""
+    ${NSD_Check} $WslCheck
+    ${NSD_CB_SelectString} $WslCombo $WslDistro
+  ${Else}
+    EnableWindow $WslCombo 0
+  ${EndIf}
+  ${NSD_CreateLabel} 0 65u 100% 90u "Adds doom and doom-wsl under the selected Linux user's ~/.local/share/doom-windows/ and marked PATH blocks to Bash/Zsh profiles. Restart the shell afterward.$\r$\n$\r$\nDoom, its packages, configuration and GUI server run in Windows. doom-wsl --wait supports editor workflows. A GUI server cannot create WSL terminal frames.$\r$\n$\r$\nUninstall removes our commands and PATH blocks. Unregistering a WSL distribution or deleting the app folder bypasses normal cleanup."
+  Pop $0
+  nsDialogs::Show
+FunctionEnd
+
+Function WslLeave
+  ${NSD_GetState} $WslCheck $0
+  StrCpy $WslDistro ""
+  ${If} $0 == ${BST_CHECKED}
+    ${NSD_GetText} $WslCombo $WslDistro
+    ${If} $WslDistro == ""
+      MessageBox MB_ICONEXCLAMATION "Choose a WSL distribution, or clear the integration checkbox. Install a user distribution first if the list is empty."
+      Abort
+    ${EndIf}
+  ${EndIf}
+FunctionEnd
+
 Function MaintenanceCreate
   ${If} $ExistingInstall == ""
     Abort
@@ -193,16 +273,20 @@ Function MaintenanceCreate
   ${If} $MaintenanceDialog == error
     Abort
   ${EndIf}
-  ${NSD_CreateLabel} 0 0 100% 26u "Doom Emacs was found at:$\r$\n$ExistingInstall"
-  Pop $0
-  ${NSD_CreateRadioButton} 0 30u 100% 18u "Reinstall / repair this installation"
+  !insertmacro LocationField "Installed application (select text, Ctrl+C):" "$ExistingInstall" 0u 12u
+  !insertmacro LocationField "$ConfigStatus" "$ConfigPath" 30u 42u
+  ${If} $LegacyConfigPath != ""
+    !insertmacro LocationField "Other existing configuration (kept):" "$LegacyConfigPath" 60u 72u
+  ${ElseIf} $WslCommandPath != ""
+    !insertmacro LocationField "Managed WSL command directory:" "$WslCommandPath" 60u 72u
+  ${EndIf}
+  ${NSD_CreateRadioButton} 0 96u 100% 18u "Reinstall / repair this installation"
   Pop $0
   ${NSD_Check} $0
-  ${NSD_CreateRadioButton} 0 50u 100% 18u "Uninstall Doom Emacs and its bundled tools"
+  ${NSD_CreateRadioButton} 0 116u 100% 18u "Uninstall Doom Emacs and its bundled tools"
   Pop $RemoveRadio
-  ${NSD_CreateMLText} 0 74u 100% 80u "$ConfigSummary"
+  ${NSD_CreateLabel} 0 140u 100% 18u "Configuration stays in place. No backup copy or automatic migration is made."
   Pop $0
-  ${NSD_Edit_SetReadOnly} $0 1
   nsDialogs::Show
 FunctionEnd
 
@@ -213,7 +297,11 @@ Function ConfigLocationCreate
   !insertmacro MUI_HEADER_TEXT "Configuration folders" "Review where your configuration lives."
   nsDialogs::Create 1018
   Pop $0
-  ${NSD_CreateMLText} 0 0 100% 150u "$ConfigSummary"
+  !insertmacro LocationField "$ConfigStatus (select text, Ctrl+C)" "$ConfigPath" 0u 12u
+  ${If} $LegacyConfigPath != ""
+    !insertmacro LocationField "Other existing configuration (kept):" "$LegacyConfigPath" 36u 48u
+  ${EndIf}
+  ${NSD_CreateMLText} 0 76u 100% 78u "$ConfigSummary"
   Pop $0
   ${NSD_Edit_SetReadOnly} $0 1
   nsDialogs::Show
@@ -227,11 +315,16 @@ Function un.ConfigLocationCreate
   !insertmacro MUI_HEADER_TEXT "Remove Doom Emacs" "Your configuration remains in the folders shown below."
   nsDialogs::Create 1018
   Pop $0
-  ${NSD_CreateLabel} 0 0 100% 30u "Remove Doom Emacs and its bundled tools from:$\r$\n$INSTDIR"
+  !insertmacro LocationField "Application to remove (select text, Ctrl+C):" "$INSTDIR" 0u 12u
+  !insertmacro LocationField "$ConfigStatus" "$ConfigPath" 31u 43u
+  ${If} $LegacyConfigPath != ""
+    !insertmacro LocationField "Other existing configuration (kept):" "$LegacyConfigPath" 62u 74u
+  ${EndIf}
+  ${If} $WslCommandPath != ""
+    !insertmacro LocationField "Managed WSL command directory to remove:" "$WslCommandPath" 93u 105u
+  ${EndIf}
+  ${NSD_CreateLabel} 0 128u 100% 27u "Configuration files stay in place. No backup copy is created. Managed Windows/WSL PATH entries and bundled tools are removed."
   Pop $0
-  ${NSD_CreateMLText} 0 36u 100% 114u "$ConfigSummary"
-  Pop $0
-  ${NSD_Edit_SetReadOnly} $0 1
   GetDlgItem $0 $HWNDPARENT 1
   SendMessage $0 ${WM_SETTEXT} 0 "STR:Uninstall"
   nsDialogs::Show
@@ -313,6 +406,11 @@ Function .onInit
   File "uninstall-doom.ps1"
   File "env-path.ps1"
   File "repair-doom.ps1"
+  File "native-process.ps1"
+  File "wsl-integration.ps1"
+  SetOutPath "$PLUGINSDIR\bridge"
+  File /r "files\bridge\*.*"
+  SetOutPath "$PLUGINSDIR"
 
   ReadRegStr $0 HKCU "${REGKEY}" "InstallLocation"
   ${If} $0 == ""
@@ -336,6 +434,9 @@ Function .onInit
   ${EndIf}
 
   !insertmacro LoadConfigSummary "$INSTDIR"
+
+  ${GetParameters} $R0
+  ${GetOptions} $R0 "/WslDistro=" $WslDistro
 
   ; The same removal path is available for unattended maintenance.
   ${GetParameters} $R0
@@ -387,6 +488,8 @@ Section "Doom Emacs" SecMain
   File /r "${STAGING}\*.*"
   ; Always overwrite any stale scripts shipped in the staging tree.
   CopyFiles /SILENT "$PLUGINSDIR\*.ps1" "$INSTDIR"
+  CreateDirectory "$INSTDIR\bridge"
+  CopyFiles /SILENT "$PLUGINSDIR\bridge\*.*" "$INSTDIR\bridge"
 
 SectionEnd
 
@@ -410,10 +513,32 @@ SectionEnd
 Section "Add doom to PATH" SecPath
 SectionEnd
 
+Function InstallSummaryCreate
+  !insertmacro MUI_HEADER_TEXT "Review installation" "Check locations and integration changes before installing."
+  nsDialogs::Create 1018
+  Pop $0
+  !insertmacro LocationField "Program and dependencies (select text, Ctrl+C):" "$INSTDIR" 0u 10u
+  !insertmacro LocationField "Windows packages and caches:" "$INSTDIR\doom\.local" 28u 38u
+  !insertmacro LocationField "Configured folder:" "$ConfigPath" 56u 66u
+  ${If} ${SectionIsSelected} ${SecPath}
+    !insertmacro LocationField "Entry added to Windows user PATH:" "$INSTDIR\bin" 84u 94u
+  ${EndIf}
+  StrCpy $1 ""
+  ${If} $WslDistro != ""
+    StrCpy $1 "WSL distribution: $WslDistro. Adds Windows doom and doom-wsl commands and marked Linux shell PATH blocks.$\r$\n"
+  ${EndIf}
+  ${NSD_CreateLabel} 0 113u 100% 45u "$1Uninstall through setup or Windows Settings. Deleting the folder leaves integration behind. Provided AS IS, without warranty; see LICENSE and bundled licenses."
+  Pop $0
+  nsDialogs::Show
+FunctionEnd
+
 ; Hidden (leading dash) and last, so it runs once every choice above is known.
 Section "-Configure" SecConfigure
   ; Translate the component choices into engine flags.
   StrCpy $R0 ""
+  ${If} $WslDistro != ""
+    StrCpy $R0 '$R0 -WslDistro "$WslDistro"'
+  ${EndIf}
   ${IfNot} ${SectionIsSelected} ${SecAOT}
     StrCpy $R0 "$R0 -NoAOT"
   ${EndIf}
@@ -445,7 +570,7 @@ Section "-Configure" SecConfigure
   Pop $0
   ${If} $0 != 0
     DetailPrint "Configuration step reported exit code $0"
-    MessageBox MB_ICONEXCLAMATION "Files were installed, but setup reported an error (code $0).$\r$\n$\r$\nOpen a new terminal and run:$\r$\n  doom sync$\r$\n  doom doctor" /SD IDOK
+    MessageBox MB_ICONEXCLAMATION "Files were copied, but setup is incomplete (code $0).$\r$\n$\r$\nSee the details above for the failed step and run setup again to repair it.$\r$\n$\r$\nFor package synchronization errors, run doom sync and doom doctor in a Windows terminal." /SD IDOK
     SetErrorLevel 1
     Abort
   ${EndIf}

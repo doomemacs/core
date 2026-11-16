@@ -28,5 +28,17 @@ if ($legacy.TrimEnd('\') -ne $configured.TrimEnd('\') -and (Test-Path -LiteralPa
     $lines += @('', 'Other existing configuration (also kept):', $legacy,
         'This installer does not select or migrate this folder automatically.')
 }
+foreach ($integration in @($manifest.wsl)) {
+    if ($integration) {
+        $lines += @('', "WSL commands/PATH to remove: $($integration.distro) / $($integration.user)", $integration.root)
+    }
+}
 # UTF-16 avoids corrupting non-ASCII profile paths through nsExec stdout/OEM.
 [IO.File]::WriteAllText($OutFile, ($lines -join "`r`n"), [Text.Encoding]::Unicode)
+$legacyPath = if ($legacy.TrimEnd('\') -ne $configured.TrimEnd('\') -and (Test-Path -LiteralPath $legacy -PathType Container)) { $legacy } else { '' }
+$configStatus = if (Test-Path -LiteralPath $configured -PathType Container) { 'Configured folder (kept):' } else { 'Configured folder (not created yet):' }
+$wsl = @($manifest.wsl | Where-Object { $_ })
+[IO.File]::WriteAllLines(($OutFile + '.ini'), [string[]]@(
+    '[paths]', "Config=$configured", "ConfigStatus=$configStatus", "Legacy=$legacyPath",
+    $(if ($wsl.Count) { "Wsl=$($wsl[0].root)" } else { 'Wsl=' })
+), [Text.Encoding]::Unicode)

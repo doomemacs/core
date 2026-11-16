@@ -54,6 +54,7 @@ param(
     # Doing it up front is the whole point of shipping the toolchain.
     [switch]$NoAOT,
     [switch]$OwnInstallRoot,
+    [string]$WslDistro,
     [string]$RegistryKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\DoomEmacs',
     [switch]$Force
 )
@@ -67,6 +68,7 @@ if (-not $scriptDir) { $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.P
 # Raw HKCU\Environment\Path helpers; defined in one place so installer and
 # uninstaller cannot drift on how PATH is read or written.
 . (Join-Path $scriptDir 'env-path.ps1')
+. (Join-Path $scriptDir 'wsl-integration.ps1')
 
 # Normalise separators up front. These paths get written into the manifest and
 # later compared with -eq by the uninstaller, so a caller passing forward slashes
@@ -249,13 +251,19 @@ if ($SourceMode -eq 'InPlace') {
     # stage-payloads.ps1 intentionally stages only the payload. Standalone
     # Staging/Cache/Download installs still need their engine, uninstaller, and
     # shared PATH helper beside the payload, just like the compiled installer.
-    foreach ($name in @('install-doom.ps1', 'uninstall-doom.ps1', 'env-path.ps1', 'repair-doom.ps1')) {
+    foreach ($name in @('install-doom.ps1', 'uninstall-doom.ps1', 'env-path.ps1', 'repair-doom.ps1', 'native-process.ps1', 'wsl-integration.ps1')) {
         Copy-Item (Join-Path $scriptDir $name) (Join-Path $InstallRoot $name) -Force
+    }
+    $bridgeSource = Join-Path $scriptDir 'files\bridge'
+    if (Test-Path -LiteralPath $bridgeSource) {
+        $bridgeDestination = Join-Path $InstallRoot 'bridge'
+        New-Item -ItemType Directory -Path $bridgeDestination -Force | Out-Null
+        Copy-Item -Path (Join-Path $bridgeSource '*') -Destination $bridgeDestination -Force
     }
 }
 
 foreach ($d in (Get-ChildItem $InstallRoot -Directory -ErrorAction SilentlyContinue)) {
-    if ($previousManifest -and -not $rootOwned -and -not @($previousManifest.entries | Where-Object {
+    if ($d.Name -ne 'bridge' -and $previousManifest -and -not $rootOwned -and -not @($previousManifest.entries | Where-Object {
         $_.kind -eq 'dir' -and $_.path -eq $d.FullName -and $_.state -eq 'created'
     }).Count) { continue }
     Add-Entry -Kind 'dir' -Path $d.FullName -State 'created'
@@ -265,7 +273,7 @@ foreach ($d in (Get-ChildItem $InstallRoot -Directory -ErrorAction SilentlyConti
 foreach ($f in (Get-ChildItem $InstallRoot -File -ErrorAction SilentlyContinue)) {
     if ($previousManifest -and -not $rootOwned -and -not @($previousManifest.entries | Where-Object {
         $_.kind -eq 'file' -and $_.path -eq $f.FullName -and $_.state -eq 'created'
-    }).Count -and $f.Name -notin @('install-doom.ps1', 'uninstall-doom.ps1', 'env-path.ps1', 'repair-doom.ps1')) { continue }
+    }).Count -and $f.Name -notin @('install-doom.ps1', 'uninstall-doom.ps1', 'env-path.ps1', 'repair-doom.ps1', 'native-process.ps1', 'wsl-integration.ps1')) { continue }
     Add-Entry -Kind 'file' -Path $f.FullName -State 'created'
 }
 $fileCount = (Get-ChildItem $InstallRoot -Recurse -File -ErrorAction SilentlyContinue | Measure-Object).Count
@@ -440,6 +448,7 @@ $manifest['sizeBytes']    = [long]$(if ($payloadSize) { $payloadSize } else { 0 
 $manifestPath = Join-Path $InstallRoot $MANIFEST_FILE
 Add-Entry -Kind 'file' -Path $manifestPath -State 'created' -Note 'install ownership manifest'
 $manifest['entries']      = $script:manifestEntries.ToArray()
+if ($previousManifest.wsl) { $manifest['wsl'] = @($previousManifest.wsl) }
 try {
     $json = ConvertTo-Json -InputObject $manifest -Depth 8
     Set-Content -Path $manifestPath -Value $json -Encoding utf8
@@ -450,6 +459,25 @@ try {
     throw
 }
 Write-Ok "$manifestPath ($($script:manifestEntries.Count) entries)"
+
+# The manifest exists before changing Linux profiles, so failures remain
+# recoverable. Existing distro integrations survive a normal reinstall.
+if ($WslDistro) {
+    Write-Stage "WSL integration: $WslDistro"
+    Add-Entry -Kind 'file' -Path (Join-Path $InstallRoot 'wsl-bridge.json') -State 'created' -Note 'WSL integration ownership'
+    Add-Entry -Kind 'dir' -Path (Join-Path $InstallRoot 'bridge-state') -State 'created' -Note 'Windows-local Emacs server state'
+    try {
+        $integration = Add-DoomWslIntegration -InstallRoot $InstallRoot -DoomDir $DoomDir -Distribution $WslDistro
+        Write-Ok "Windows doom and GUI client commands configured for $($integration.user) in $WslDistro"
+    } finally {
+        $settingsPath = Join-Path $InstallRoot 'wsl-bridge.json'
+        if (Test-Path -LiteralPath $settingsPath) {
+            $manifest['wsl'] = @((Get-Content -LiteralPath $settingsPath -Raw | ConvertFrom-Json).integrations)
+        }
+        $manifest['entries'] = $script:manifestEntries.ToArray()
+        $manifest | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
+    }
+}
 
 # --------------------------------------------------------------- first sync
 

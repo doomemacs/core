@@ -48,6 +48,8 @@ The default user configuration is =%USERPROFILE%\.config\doom=. Existing files
 are kept. Windows show the full configuration paths, identify a missing folder,
 and separately display an existing =%USERPROFILE%\.doom.d=. They explicitly state
 that configuration stays in place and no backup or automatic migration is made.
+Application, cache, PATH and configuration locations are shown in individual
+read-only text fields: select a field and use Ctrl+A / Ctrl+C to copy its path.
 
 Opening setup again offers reinstall/repair or removal of the bundled tools.
 Removal is also registered in Windows Settings. The ownership manifest records
@@ -78,6 +80,11 @@ Run the following with Windows PowerShell 5.1:
 .\installer\test\diff-selftest.ps1
 .\installer\test\snapshot.ps1 -SelfTest
 .\installer\test\installer-selftest.ps1 -MakeNsis 'C:\path\to\makensis.exe'
+.\installer\test\wsl-bridge-selftest.ps1
+# Optional real WSL/Windows runtime checks, using temporary Linux homes:
+.\installer\test\wsl-bridge-selftest.ps1 -Distribution Ubuntu
+.\installer\test\windows-client-selftest.ps1 -EmacsRoot 'C:\staging\emacs' -Distribution Ubuntu
+.\installer\test\wsl-cli-selftest.ps1 -Distribution Ubuntu -InstallRoot 'C:\staging'
 #+end_src
 
 The lifecycle test compiles the actual NSIS source against a tiny fixture payload
@@ -91,13 +98,72 @@ Windows Sandbox installation, editor launch and removal cycle remains required
 before recommending a release. Local host smoke tests do not establish that a
 clean machine has no missing dependencies.
 
+* Optional WSL bridge
+
+Select =Enable Windows Doom commands in WSL= during setup and choose an installed
+user distribution. The distribution is identified by its registration id, not
+only its name. Docker Desktop's internal distributions are excluded. WSL and
+Windows executable interoperability must already work. Windows 10 1903+ is
+required. Automatic shell integration supports Bash, Zsh and POSIX login shells.
+
+The selected Linux user receives commands in
+=~/.local/share/doom-windows/INSTALL_ID/bin=. Marked blocks in =.profile= and
+=.bashrc= (and an existing/default Zsh =.zshrc=) add this directory to PATH.
+These commands take precedence in that shell. Reopen the shell after setup.
+The user's existing EDITOR and Linux Emacs installation are preserved.
+
+#+begin_src sh
+doom sync              # Windows Doom, packages and config
+doom doctor            # Windows installation diagnostics
+doom help
+doom-wsl ./src/main.rs  # open the WSL file in the Windows GUI server
+doom-wsl --new-frame ./src/main.rs
+EDITOR='doom-wsl --wait' git commit
+#+end_src
+
+Every =doom= argument is forwarded unchanged to the selected Windows installation
+through its bundled shell and Emacs. Its working directory is the Windows
+installation root, not the Linux shell's current directory. The =doom-wsl=
+command resolves Linux filenames (including relative names) to Windows paths
+using =realpath= and =wslpath=. Arguments use base64/NUL framing instead of being
+interpolated into shell or Lisp code. Linux projects remain on the WSL disk;
+editing them still requires that disk to be accessible. Windows tools are used
+for tooling; this feature does not configure Linux LSP/build tools through TRAMP.
+
+The GUI launcher starts a Windows-local, authenticated server when integration
+is enabled. =doom-wsl= connects to it, or starts the Windows GUI when needed.
+Restart any old editor instance once after enabling integration. Server state
+lives in =bridge-state/server= inside the Windows installation; no listener is
+opened on WSL/network interfaces. The client executable's application manifest
+opts into UTF-8 so Unicode paths do not pass through the system ANSI code page.
+File contents retain their normal buffer encoding.
+
+Native Windows Emacs cannot combine GUI and text frames in one session.
+=doom-wsl --tty= therefore returns an explanation rather than starting an
+unrelated Linux editor. =--wait= uses the normal Emacs server completion workflow
+(=C-x #=) for programs such as Git.
+
+Setup can also be driven with =/WslDistro=Ubuntu=, or by passing
+=-WslDistro Ubuntu= to the PowerShell engine. Rerunning setup can add another
+distribution; existing integrations are kept. The ownership metadata is stored
+in =wsl-bridge.json= and the installation manifest before Linux hooks are changed.
+Removal targets the recorded Linux user, checks script hashes and deletes only
+the exact managed PATH blocks. Edited scripts/blocks are preserved with an error.
+If the distribution or its disk is inaccessible, Windows removal stops before
+deleting the scripts and manifest, so cleanup can be retried. An unregistered
+distribution is already gone; a replacement with the same name is not touched.
+
+Deleting the Windows folder directly bypasses this cleanup and leaves PATH and
+WSL hooks. Use the installer's maintenance option or Windows Settings instead.
+The review page lists these changes and the applicable no-warranty notice.
+
 * Limitations and review questions
 
 - The shipped Doom tree is a snapshot without Git metadata. Updating the
   framework requires another bundle; =doom upgrade= cannot update the core.
 - =-DoomDir= on the engine is not propagated to the CMD launchers. Use the default
   configuration location until custom paths are implemented consistently.
-- WSL integration, ARM64 and machine-wide installation are outside this proposal.
+- ARM64 and machine-wide installation are outside this proposal.
 - GUI launch through a CMD file may briefly display a console window.
 - Pinned SHA256 hashes detect changes to downloaded artifacts, but do not
   authenticate their publisher. GPG signature verification is not implemented;

@@ -269,6 +269,10 @@ if (Test-Path $gitCfg) {
 
 Write-Stage 'Branding executables'
 
+foreach ($name in @('emacsclient.exe', 'emacsclientw.exe')) {
+    & (Join-Path $scriptDir 'set-client-utf8.ps1') -ExePath (Join-Path $StagingDir ('emacs\bin\' + $name))
+}
+
 # A shortcut's IconLocation only styles the shortcut. Once Emacs is running, the
 # taskbar button, Alt-Tab entry and window all use the icon compiled into the
 # binary, so those have to be patched too or the Doom icon vanishes the moment

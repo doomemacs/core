@@ -65,5 +65,9 @@ rem    native-comp-eln-load-path itself (lisp/doom.el:457) but too late to catch
 rem    trampolines compiled during early startup.
 rem
 rem Requires Emacs 29+; we bundle 31.1.
-start "" "%RUNEMACS%" --init-directory="%EMACSDIR%" %*
+if exist "%DOOM_ROOT%\wsl-bridge.json" (
+    start "" "%RUNEMACS%" --init-directory="%EMACSDIR%" --load="%DOOM_ROOT%\bridge\server.el" %*
+) else (
+    start "" "%RUNEMACS%" --init-directory="%EMACSDIR%" %*
+)
 exit /b 0
