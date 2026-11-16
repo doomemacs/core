@@ -1,0 +1,55 @@
+name: Windows installer
+
+on:
+  push:
+    paths:
+      - 'installer/**'
+      - '.github/workflows/windows-installer.yml'
+  pull_request:
+    paths:
+      - 'installer/**'
+      - '.github/workflows/windows-installer.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  lifecycle:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: powershell
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned portable NSIS
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP 'nsis-3.11.zip'
+          Invoke-WebRequest -UseBasicParsing -Uri 'https://downloads.sourceforge.net/project/nsis/NSIS%203/3.11/nsis-3.11.zip' -OutFile $archive
+          $expected = 'c7d27f780ddb6cffb4730138cd1591e841f4b7edb155856901cdf5f214394fa1'
+          if ((Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash -ne $expected) {
+            throw 'NSIS archive hash mismatch'
+          }
+          Expand-Archive -LiteralPath $archive -DestinationPath $env:RUNNER_TEMP
+      - name: Check Windows PowerShell syntax
+        run: |
+          $issues = @()
+          Get-ChildItem installer -Recurse -Filter '*.ps1' | ForEach-Object {
+            $tokens = $null
+            $parseErrors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$tokens, [ref]$parseErrors)
+            $issues += $parseErrors
+          }
+          if ($issues.Count) { throw ($issues | Out-String) }
+      - name: Check PATH, ownership guards and footprint tooling
+        run: |
+          foreach ($name in @('env-path-selftest', 'install-guard-selftest', 'uninstall-plan-selftest', 'diff-selftest')) {
+            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File "./installer/test/$name.ps1"
+            if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          }
+          & powershell.exe -NoProfile -ExecutionPolicy Bypass -File ./installer/test/snapshot.ps1 -SelfTest
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Exercise the compiled installer lifecycle
+        run: |
+          & ./installer/test/installer-selftest.ps1 -MakeNsis (Join-Path $env:RUNNER_TEMP 'nsis-3.11\makensis.exe')
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }

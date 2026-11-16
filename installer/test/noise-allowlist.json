@@ -1,0 +1,74 @@
+{
+  "_comment": [
+    "Paths and registry values that change on their own, even inside a freshly booted",
+    "Windows Sandbox, and therefore cannot be treated as installer footprint.",
+    "",
+    "Keep this list SHORT and justify every entry. Every pattern here is a place a real",
+    "leak could hide, so a lazy broad pattern silently weakens A3 (reversibility).",
+    "Patterns are .NET regex, matched case-insensitively against the full path."
+  ],
+  "schema": 1,
+  "filePatterns": [
+    {
+      "pattern": "\\\\Microsoft\\\\Windows\\\\UsrClass\\.dat",
+      "why": "Per-user registry hive file, rewritten constantly by explorer"
+    },
+    {
+      "pattern": "\\\\Microsoft\\\\Windows\\\\Themes\\\\",
+      "why": "Theme cache regenerates on logon"
+    },
+    {
+      "pattern": "\\\\Microsoft\\\\Windows\\\\Notifications\\\\",
+      "why": "Notification database, written by the shell"
+    },
+    {
+      "pattern": "\\\\Microsoft\\\\Windows\\\\History\\\\",
+      "why": "Shell history"
+    },
+    {
+      "pattern": "\\\\Microsoft\\\\Windows\\\\WER\\\\",
+      "why": "Windows Error Reporting queue"
+    },
+    {
+      "pattern": "\\\\Microsoft\\\\Windows\\\\SettingSync\\\\",
+      "why": "Settings sync scratch"
+    },
+    {
+      "pattern": "\\\\Microsoft\\\\CLR_v4\\.0[^\\\\]*\\\\",
+      "why": "NGen/CLR usage traces, written whenever any .NET process runs"
+    },
+    {
+      "pattern": "\\\\Microsoft\\\\Windows\\\\Start Menu\\\\Programs\\\\Startup\\\\desktop\\.ini$",
+      "why": "Shell-authored folder metadata"
+    },
+    {
+      "pattern": "\\\\ActivitiesCache\\.db",
+      "why": "Timeline database"
+    },
+    {
+      "pattern": "\\\\Microsoft\\\\Windows Security Health\\\\",
+      "why": "Defender health telemetry"
+    },
+    {
+      "pattern": "\\\\PowerShell\\\\StartupProfileData-",
+      "why": "PowerShell writes this on every single launch, including ours"
+    },
+    {
+      "pattern": "\\\\Microsoft\\\\Windows\\\\PowerShell\\\\ModuleAnalysisCache$",
+      "why": "Regenerated whenever a PowerShell module is imported"
+    }
+  ],
+  "registryValuePatterns": [
+    {
+      "path": "HKCU:\\Environment",
+      "name": "^TEMP$|^TMP$",
+      "why": "Sandbox rewrites these per session"
+    }
+  ],
+  "envVarPatterns": [
+    {
+      "pattern": "^(TEMP|TMP|PSModulePath)$",
+      "why": "Session-scoped or appended to by any installed module"
+    }
+  ]
+}

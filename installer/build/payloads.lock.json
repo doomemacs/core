@@ -1,0 +1,151 @@
+﻿{
+    "_comment":  [
+                     "Pinned payloads for the Doom Emacs Windows installer.",
+                     "sha256 null means not yet pinned: run fetch-payloads.ps1 -Update to download and pin.",
+                     "Once pinned, every normal run verifies against these hashes and fails loudly on mismatch.",
+                     "publishedDigest, where present, is a hash the upstream publisher supplies out-of-band;",
+                     "it is checked against our computed hash on -Update so pinning is not blind trust-on-first-use."
+                 ],
+    "schema":  1,
+    "payloads":  [
+                     {
+                         "id":  "emacs",
+                         "description":  "GNU Emacs 31.1, UCRT64 build. NOTE: an earlier claim that this build ships libgccjit was WRONG - verified by inspecting the zip, neither GNU build contains it. UCRT64 is chosen instead for ABI consistency with the MSYS2 ucrt64 toolchain payloads below, since mixing C runtimes is a known hazard.",
+                         "version":  "31.1",
+                         "url":  "https://ftp.gnu.org/gnu/emacs/windows/emacs-31/emacs-31.1-UCRT64.zip",
+                         "filename":  "emacs-31.1-UCRT64.zip",
+                         "expectedBytes":  264125875,
+                         "sha256":  "fc728ca343e1b228a8baab39854f5e3fb657059f1917928f054e74e364bf6d79",
+                         "publishedDigestUrl":  "https://ftp.gnu.org/gnu/emacs/windows/emacs-31/emacs-31.1-UCRT64.zip.sig",
+                         "publishedDigestKind":  "gpg",
+                         "stripRoot":  true,
+                         "installSubdir":  "emacs"
+                     },
+                     {
+                         "id":  "git",
+                         "description":  "MinGit (full, not the busybox variant). Satisfies Doom\u0027s hard git dependency AND ships a real usr/bin/sh.exe, so bin/doom runs without a separate Git Bash install. The busybox variant is 4.5MB smaller but ships only busybox.exe, with no sh.exe for it to dispatch from.",
+                         "version":  "2.55.0.5",
+                         "url":  "https://github.com/git-for-windows/git/releases/download/v2.55.0.windows.5/MinGit-2.55.0.5-64-bit.zip",
+                         "filename":  "MinGit-2.55.0.5-64-bit.zip",
+                         "expectedBytes":  38989688,
+                         "sha256":  "56d7b226b7693196cfc71fef26568f536c4a021ab6c37ff2db4287bed908e96e",
+                         "publishedDigestUrl":  null,
+                         "publishedDigestKind":  null,
+                         "stripRoot":  false,
+                         "installSubdir":  "deps/git"
+                     },
+                     {
+                         "id":  "ripgrep",
+                         "description":  "ripgrep. Hard dependency: bin/doom-doctor errors without it.",
+                         "version":  "15.2.0",
+                         "url":  "https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-x86_64-pc-windows-msvc.zip",
+                         "filename":  "ripgrep-15.2.0-x86_64-pc-windows-msvc.zip",
+                         "expectedBytes":  1800000,
+                         "sha256":  "71b2fef860abe467217a538ff31de02f5258807c0129f771846f87bd029aafc5",
+                         "publishedDigestUrl":  "https://github.com/BurntSushi/ripgrep/releases/download/15.2.0/ripgrep-15.2.0-x86_64-pc-windows-msvc.zip.sha256",
+                         "publishedDigestKind":  "sha256-file",
+                         "stripRoot":  true,
+                         "installSubdir":  "deps/rg"
+                     },
+                     {
+                         "id":  "fd",
+                         "description":  "fd. Soft dependency: doctor warns without it, project searches are slower.",
+                         "version":  "10.5.0",
+                         "url":  "https://github.com/sharkdp/fd/releases/download/v10.5.0/fd-v10.5.0-x86_64-pc-windows-msvc.zip",
+                         "filename":  "fd-v10.5.0-x86_64-pc-windows-msvc.zip",
+                         "expectedBytes":  1500000,
+                         "sha256":  "a227701b8551c35a9931d9f6da75503cf86d88e182d71fb849a70864c5d57cd7",
+                         "publishedDigestUrl":  null,
+                         "publishedDigestKind":  null,
+                         "stripRoot":  true,
+                         "installSubdir":  "deps/fd"
+                     },
+                     {
+                         "id":  "libgccjit",
+                         "description":  "MSYS2 UCRT64 libgccjit. Neither GNU Windows build ships this, which is why stock Emacs on Windows reports NATIVE_COMP in system-configuration-features while (native-comp-available-p) returns nil. Without it Doom\u0027s ~200 packages are only byte-compiled.",
+                         "version":  "16.2.0-3",
+                         "url":  "https://mirror.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-libgccjit-16.2.0-3-any.pkg.tar.zst",
+                         "filename":  "mingw-w64-ucrt-x86_64-libgccjit-16.2.0-3-any.pkg.tar.zst",
+                         "expectedBytes":  13600000,
+                         "sha256":  "4d4ac5ff3fb0f598874386372e213bbb43fb9f3f15095a06d345162b20509097",
+                         "publishedDigestUrl":  null,
+                         "publishedDigestKind":  null,
+                         "stripRoot":  true,
+                         "installSubdir":  "emacs"
+                     },
+                     {
+                         "id":  "gcc",
+                         "description":  "MSYS2 UCRT64 gcc. libgccjit shells out to the gcc driver at runtime, so the JIT is useless without it.",
+                         "version":  "16.2.0-3",
+                         "url":  "https://mirror.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-gcc-16.2.0-3-any.pkg.tar.zst",
+                         "filename":  "mingw-w64-ucrt-x86_64-gcc-16.2.0-3-any.pkg.tar.zst",
+                         "expectedBytes":  48700000,
+                         "sha256":  "1cd86e5817f6e0d7310d7cb2bb91f4a55e1256cb4ce580a0c5f2a74e013d144d",
+                         "publishedDigestUrl":  null,
+                         "publishedDigestKind":  null,
+                         "stripRoot":  true,
+                         "installSubdir":  "emacs"
+                     },
+                     {
+                         "id":  "binutils",
+                         "description":  "MSYS2 UCRT64 binutils. Supplies as.exe and ld.exe, which the gcc driver invokes to turn native-comp output into .eln files.",
+                         "version":  "2.47-3",
+                         "url":  "https://mirror.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-binutils-2.47-3-any.pkg.tar.zst",
+                         "filename":  "mingw-w64-ucrt-x86_64-binutils-2.47-3-any.pkg.tar.zst",
+                         "expectedBytes":  6600000,
+                         "sha256":  "ba98af202fe71e0884bb51daf78ce10bd8a51c69528c700dcf5855e6ece06dd3",
+                         "publishedDigestUrl":  null,
+                         "publishedDigestKind":  null,
+                         "stripRoot":  true,
+                         "installSubdir":  "emacs"
+                     },
+                     {
+                         "id":  "crt",
+                         "description":  "mingw-w64 CRT. Without it ld.exe fails every native-comp link with \u0027cannot find dllcrt2.o\u0027 and \u0027cannot find -lmingw32\u0027. Verified empirically: adding this is what turned a failing native-compile into a produced .eln.",
+                         "version":  "13.0.0.r91.gfc0b67305-1",
+                         "url":  "https://mirror.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-crt-git-13.0.0.r91.gfc0b67305-1-any.pkg.tar.zst",
+                         "filename":  "mingw-w64-ucrt-x86_64-crt-git-13.0.0.r91.gfc0b67305-1-any.pkg.tar.zst",
+                         "expectedBytes":  4800000,
+                         "sha256":  "39a1de0c36cbb092a4fc473159088515373b4dbcbcfb1aebba6c3a5f001e8c11",
+                         "publishedDigestUrl":  null,
+                         "publishedDigestKind":  null,
+                         "stripRoot":  true,
+                         "installSubdir":  "emacs"
+                     },
+                     {
+                         "id":  "winpthreads",
+                         "description":  "mingw-w64 winpthreads. Satisfies the -lpthread the native-comp link line asks for.",
+                         "version":  "12.0.0.r747.g1a99f8514-1",
+                         "url":  "https://mirror.msys2.org/mingw/ucrt64/mingw-w64-ucrt-x86_64-winpthreads-git-12.0.0.r747.g1a99f8514-1-any.pkg.tar.zst",
+                         "filename":  "mingw-w64-ucrt-x86_64-winpthreads-git-12.0.0.r747.g1a99f8514-1-any.pkg.tar.zst",
+                         "expectedBytes":  60000,
+                         "sha256":  "80a847ea9e6779432503699698e39315e8b8a6ca20b6179ed1b3a5ced9b3ece7",
+                         "publishedDigestUrl":  null,
+                         "publishedDigestKind":  null,
+                         "stripRoot":  true,
+                         "installSubdir":  "emacs"
+                     }
+                 ],
+    "buildTools":  [
+                       {
+                           "id":  "zstd",
+                           "description":  "BUILD-TIME ONLY, never shipped. MSYS2 packages are .tar.zst and neither GNU tar 1.35 nor the Windows bsdtar 3.5.2 can decompress zstd on their own - both shell out to a zstd binary that Windows does not provide.",
+                           "version":  "1.5.7",
+                           "url":  "https://github.com/facebook/zstd/releases/download/v1.5.7/zstd-v1.5.7-win64.zip",
+                           "filename":  "zstd-v1.5.7-win64.zip",
+                           "sha256":  "acb4e8111511749dc7a3ebedca9b04190e37a17afeb73f55d4425dbf0b90fad9",
+                           "extractTo":  "build/tools",
+                           "extractMember":  "*/zstd.exe"
+                       }
+                   ],
+    "doom":  {
+                 "_comment":  "Doom itself ships from this working tree, not a download. The submodule SHA is pinned so a rebuild reproduces the same modules.",
+                 "repo":  "https://github.com/doomemacs/core",
+                 "branch":  "master",
+                 "submodule":  {
+                                   "path":  "sources/doom+",
+                                   "url":  "https://github.com/doomemacs/modules",
+                                   "sha":  "f054be8fcdd2a0446eb8259d76dd4f6f76acc0b7"
+                               }
+             }
+}

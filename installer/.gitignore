@@ -1,0 +1,14 @@
+# Downloaded payloads (large, content-verified against payloads.lock.json)
+cache/
+# Compiled installer output
+dist/
+# Resumable driver checkpoints — machine-local
+build/state.json
+# Build-only tools fetched by fetch-payloads.ps1 (zstd.exe); never shipped
+build/tools/
+# Run logs
+*.log
+# Staged/extracted payload trees
+staging/
+# Sandbox test results
+test/results/

@@ -1,0 +1,111 @@
+#+TITLE: Experimental Windows installer
+
+This directory proposes a native Windows x86_64 installer. It is not an official
+binary distribution. Framework code and modules are used without installer
+specific patches. Initial package synchronization requires internet access.
+
+* Build
+
+Requirements: Windows 10 or newer, Windows PowerShell 5.1, Git, NSIS 3.11 or newer,
+and approximately 4 GB free for archives, staging and installer output. Build
+tools and archives are ignored by Git; do not commit generated executables.
+
+Initialize the module checkout before building:
+
+#+begin_src powershell
+git submodule update --init sources/doom+
+.\installer\build\build-installer.ps1
+#+end_src
+
+The build verifies the archives against =build/payloads.lock.json=, extracts them
+to a staging directory outside the checkout, and compiles =doom.nsi=. The module
+checkout must match the lockfile. When updating the upstream module gitlink,
+update the lockfile's =doom.submodule.sha= too.
+
+NSIS must be on PATH or installed under Program Files. A portable NSIS 3.11
+installation at =build/tools/nsis-3.11/= is also recognized. The fetch stage
+downloads zstd as a build-only tool for MSYS2 archives.
+
+To recompile an existing staging tree:
+
+#+begin_src powershell
+.\installer\build\build-installer.ps1 -Stages compile
+# Fast, large executable for local iteration:
+.\installer\build\build-installer.ps1 -Stages compile -SkipCompress
+#+end_src
+
+Management scripts are embedded from source at compile time, so stale staging
+cannot omit the install engine or uninstaller.
+
+* Installation and removal
+
+The default root is =%LOCALAPPDATA%\Programs\DoomEmacs=. The installer bundles GNU
+Emacs, MinGit, ripgrep, fd and an MSYS2 UCRT64 native compilation toolchain. Only
+the root's =bin= directory is added to the user's PATH. Launchers set their
+environment per process; they do not change a persistent HOME variable.
+
+The default user configuration is =%USERPROFILE%\.config\doom=. Existing files
+are kept. Windows show the full configuration paths, identify a missing folder,
+and separately display an existing =%USERPROFILE%\.doom.d=. They explicitly state
+that configuration stays in place and no backup or automatic migration is made.
+
+Opening setup again offers reinstall/repair or removal of the bundled tools.
+Removal is also registered in Windows Settings. The ownership manifest records
+which paths and PATH entries were created by setup. Default removal keeps user
+configuration and separately installed tools.
+
+#+begin_src powershell
+# Unattended install, without shortcuts:
+.\DoomEmacs-VERSION-x86_64-setup.exe /S /NoShortcuts
+# Unattended removal, keeping configuration:
+.\DoomEmacs-VERSION-x86_64-setup.exe /S /Uninstall
+# Inspect recovery of an incomplete bundle:
+.\installer\repair-doom.ps1 -InstallRoot 'C:\path\to\DoomEmacs' -WhatIf
+#+end_src
+
+The recovery helper handles early prototype bundles without an ownership
+manifest. It adopts only recognized payload paths; unrelated root content and
+the root itself are preserved. It does not download packages.
+
+* Validation
+
+Run the following with Windows PowerShell 5.1:
+
+#+begin_src powershell
+.\installer\test\env-path-selftest.ps1
+.\installer\test\install-guard-selftest.ps1
+.\installer\test\uninstall-plan-selftest.ps1
+.\installer\test\diff-selftest.ps1
+.\installer\test\snapshot.ps1 -SelfTest
+.\installer\test\installer-selftest.ps1 -MakeNsis 'C:\path\to\makensis.exe'
+#+end_src
+
+The lifecycle test compiles the actual NSIS source against a tiny fixture payload
+and exercises install, reinstall, legacy recovery, failed sync and removal. It
+uses a temporary profile and uninstall registry key. Its temporary user PATH
+entry is removed in =finally=. The CLI is a stub: this proves packaging and
+lifecycle behavior, not real package downloads or editor startup.
+
+The snapshot/diff tools support before/after footprint inspection. A full clean
+Windows Sandbox installation, editor launch and removal cycle remains required
+before recommending a release. Local host smoke tests do not establish that a
+clean machine has no missing dependencies.
+
+* Limitations and review questions
+
+- The shipped Doom tree is a snapshot without Git metadata. Updating the
+  framework requires another bundle; =doom upgrade= cannot update the core.
+- =-DoomDir= on the engine is not propagated to the CMD launchers. Use the default
+  configuration location until custom paths are implemented consistently.
+- WSL integration, ARM64 and machine-wide installation are outside this proposal.
+- GUI launch through a CMD file may briefly display a console window.
+- Pinned SHA256 hashes detect changes to downloaded artifacts, but do not
+  authenticate their publisher. GPG signature verification is not implemented;
+  first pinning without a publisher digest uses trust-on-first-use.
+- Redistribution review is still needed for every bundled component, including
+  applicable license files, source availability and corresponding source offers.
+- Release ownership, signing, hosting and acceptance of this packaging approach
+  require maintainer agreement. No automated binary release is proposed here.
+
+The installer and supporting changes include AI-assisted work. The proposed PR
+must disclose this and comply with the upstream contribution policy.

@@ -129,6 +129,45 @@ Check out [the FAQ][FAQ] for answers to common questions about the project.
 
 
 # Install
+
+### Experimental Windows installer
+
+The proposed per-user Windows x86_64 installer under [`installer/`](installer/)
+bundles Emacs, Git, ripgrep, fd and a native compilation toolchain. Internet
+access is required for the first package sync. This is an experimental packaging
+workflow, not a published or supported installer release. See
+[`installer/README.org`](installer/README.org) for build instructions, validation
+and known limitations.
+
+Run the setup executable to install. Run it again to choose **Reinstall / repair**
+or **Uninstall Doom Emacs and its bundled tools**. Removal keeps your configuration
+in `%USERPROFILE%\.config\doom` and tools installed separately. Windows Settings
+also provides an uninstall entry. Incomplete installations from the first build
+are recognized and their removal metadata is recovered automatically.
+The installer and removal windows show the full configuration paths, flag a
+missing configured folder, and list an existing `.doom.d` separately. Keeping
+configuration means leaving those files in place; no backup copy is created.
+
+The installer adds `%LOCALAPPDATA%\Programs\DoomEmacs\bin` (or the selected install
+root's `bin`) to your user PATH. Run `doom doctor` in PowerShell or CMD afterward.
+If an existing terminal cannot find `doom`, fully close and reopen the terminal
+application, including Windows Terminal. `doom-emacs` starts the GUI.
+
+For unattended removal, use `DoomEmacs-…-setup.exe /S /Uninstall`.
+`/NoShortcuts` suppresses shortcut creation during unattended installation.
+To inspect recovery of an old incomplete installation without changing it:
+
+```powershell
+.\installer\repair-doom.ps1 -InstallRoot "$env:LOCALAPPDATA\Programs\DoomEmacs" -WhatIf
+```
+
+The installed Doom tree is a snapshot without `.git`, so `doom upgrade` cannot
+update the framework. Update this Windows bundle by rerunning a newer installer.
+WSL integration is a separate step: this installer configures Windows Emacs and
+Windows commands; it does not install Linux Emacs or a Linux `doom` command.
+
+### Standard installation
+
 ``` sh
 git clone --depth 1 https://github.com/doomemacs/core ~/.config/emacs
 ~/.config/emacs/bin/doom install
