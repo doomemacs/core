@@ -1073,8 +1073,8 @@ windows, switch to `doom-fallback-buffer'. Otherwise, delegate to original
     (cond ((eq buf (doom-fallback-buffer))
            (message "Can't kill the fallback buffer.")
            t)
-          ((and (doom-real-buffer-p buf)
-                (run-hook-with-args-until-failure 'kill-buffer-query-functions))
+          ((not (doom-real-buffer-p buf)) nil)
+          ((run-hook-with-args-until-failure 'kill-buffer-query-functions)
            (let ((visible-p (delq (selected-window) (get-buffer-window-list buf nil t))))
              (unless visible-p
                (when (and (buffer-file-name (buffer-base-buffer))
@@ -1100,7 +1100,8 @@ windows, switch to `doom-fallback-buffer'. Otherwise, delegate to original
                    (restore-buffer-modified-p nil))
                  (kill-buffer buf)))
              (run-hooks 'buffer-list-update-hook)
-             t)))))
+             t))
+          (t))))
 
 
 ;;; ** Theme & font loaders
