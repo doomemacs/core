@@ -54,13 +54,35 @@ function Assert-Installed {
 }
 
 try {
-    foreach ($relative in @('emacs\bin', 'deps\git\cmd', 'doom\lisp', 'doom\static', 'bin')) {
+    foreach ($relative in @('emacs\bin', 'deps\git\cmd', 'deps\git\usr\bin', 'doom\lisp', 'doom\static', 'bin')) {
         New-Item -ItemType Directory -Path (Join-Path $stage $relative) -Force | Out-Null
     }
     New-Item -ItemType Directory -Path (Join-Path $profile 'AppData\Local') -Force | Out-Null
-    foreach ($relative in @('emacs\bin\emacs.exe', 'deps\git\cmd\git.exe', 'doom\lisp\doom.el', 'bin\doom-env.cmd')) {
+    foreach ($relative in @('deps\git\cmd\git.exe', 'doom\lisp\doom.el', 'bin\doom-env.cmd')) {
         Set-Content -LiteralPath (Join-Path $stage $relative) -Value 'fixture' -Encoding ASCII
     }
+    # Real executable fixtures exercise the runtime probe and streaming runner.
+    Add-Type -OutputAssembly (Join-Path $stage 'emacs\bin\emacs.exe') -OutputType ConsoleApplication -TypeDefinition @'
+using System;
+using System.IO;
+public class DoomSyncFixture {
+ public static int Main(string[] args) {
+  if (Array.IndexOf(args, "-Q") >= 0) {
+   Console.Write("{\"emacsVersion\":\"31.1\",\"systemConfiguration\":\"test-windows\",\"nativeAbi\":\"31.1-test\"}");
+   return 0;
+  }
+  string root = Environment.CurrentDirectory;
+  string state = Path.Combine(root, "doom", ".local");
+  Directory.CreateDirectory(state);
+  File.AppendAllText(Path.Combine(state, "sync-calls.log"), String.Join(" ", args) + Environment.NewLine);
+  Console.WriteLine("\u001b[32mfixture output\u001b[0m\u001b[1A");
+  if (File.Exists(Path.Combine(root, "bin", "fail-sync"))) return 7;
+  Directory.CreateDirectory(Path.Combine(state, "straight", "build-test", "package"));
+  return 0;
+ }
+}
+'@
+    Copy-Item -LiteralPath (Join-Path $stage 'emacs\bin\emacs.exe') -Destination (Join-Path $stage 'deps\git\usr\bin\sh.exe')
     Copy-Item -LiteralPath (Join-Path $installerDir '..\.doom') -Destination (Join-Path $stage 'doom\.doom')
     Copy-Item -LiteralPath (Join-Path $installerDir '..\LICENSE') -Destination (Join-Path $stage 'doom\LICENSE')
     foreach ($name in @('init', 'config', 'packages')) {
@@ -85,13 +107,23 @@ exit /b 0
     Assert-Installed
     $manifest = Get-Content -LiteralPath (Join-Path $root 'install-manifest.json') -Raw | ConvertFrom-Json
     $originalRootState = @($manifest.entries | Where-Object { $_.path -eq $root })[0].state
+    $configFile = Join-Path $profile '.config\doom\config.el'
+    Set-Content -LiteralPath $configFile -Value '; user edits must survive setup' -Encoding UTF8
+    $configHash = (Get-FileHash -LiteralPath $configFile -Algorithm SHA256).Hash
     $exitCode = Invoke-TestProcess $setup "/S /NoShortcuts /D=$root"
     if ($exitCode -ne 0) { throw "Reinstall exited $exitCode" }
     Assert-Installed
+    if ((Get-FileHash -LiteralPath $configFile -Algorithm SHA256).Hash -ne $configHash) { throw 'Reinstall overwrote the user configuration.' }
     $manifest = Get-Content -LiteralPath (Join-Path $root 'install-manifest.json') -Raw | ConvertFrom-Json
     if (@($manifest.entries | Where-Object { $_.path -eq $root })[0].state -ne $originalRootState) {
         throw 'Reinstall lost root ownership.'
     }
+    $calls = @(Get-Content -LiteralPath (Join-Path $root 'doom\.local\sync-calls.log'))
+    if ($calls.Count -ne 2 -or $calls[-1] -match '--rebuild|--aot') {
+        throw 'Same-runtime reinstall did not reuse package builds with fast setup defaults.'
+    }
+    if (-not $manifest.packageSync.success) { throw 'Successful sync did not record its compilation signature.' }
+    Write-Host 'PASS: same-runtime reinstall is incremental and AOT is opt-in.'
     Write-Host 'PASS: compiled installer installs/reinstalls its engine, manifest, PATH and uninstall registration.'
 
     # Model the actual broken release, including an unrelated root file to preserve.
@@ -113,6 +145,17 @@ exit /b 0
     }
     Write-Host 'PASS: legacy recovery preserves unknown content across repeated reinstalls.'
 
+    # A changed runtime/toolchain must trigger a rebuild, without deleting caches.
+    $marker.emacs = 'b' * 64
+    $marker | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $stage '.staged.json') -Encoding UTF8
+    & $MakeNsis '-V2' '-DNOCOMPRESS=1' "-DSTAGING=$stage" "-DOUTFILE=$setup" "-DREGKEY=$regSubkey" (Join-Path $installerDir 'doom.nsi')
+    if ($LASTEXITCODE -ne 0) { throw 'Changed-runtime fixture compilation failed.' }
+    $exitCode = Invoke-TestProcess $setup "/S /NoShortcuts /D=$root"
+    if ($exitCode -ne 0) { throw "Changed-runtime reinstall exited $exitCode" }
+    $calls = @(Get-Content -LiteralPath (Join-Path $root 'doom\.local\sync-calls.log'))
+    if ($calls[-1] -notmatch '--rebuild' -or $calls[-1] -match '--aot') { throw 'Runtime change did not request the required byte rebuild.' }
+    Write-Host 'PASS: changed compilation environment triggers an explicit rebuild.'
+
     # A nonzero sync exit with an old package tree must still fail setup.
     Set-Content -LiteralPath (Join-Path $stage 'bin\fail-sync') -Value 'fail' -Encoding ASCII
     & $MakeNsis '-V2' '-DNOCOMPRESS=1' "-DSTAGING=$stage" "-DOUTFILE=$setup" "-DREGKEY=$regSubkey" (Join-Path $installerDir 'doom.nsi')
@@ -120,6 +163,8 @@ exit /b 0
     $exitCode = Invoke-TestProcess $setup "/S /NoShortcuts /D=$root"
     if ($exitCode -eq 0) { throw 'Failed sync was reported as successful setup.' }
     if (-not (Test-Path -LiteralPath (Join-Path $root 'install-manifest.json'))) { throw 'Failed sync lost recovery metadata.' }
+    $manifest = Get-Content -LiteralPath (Join-Path $root 'install-manifest.json') -Raw | ConvertFrom-Json
+    if ($manifest.packageSync.success) { throw 'Failed sync retained an obsolete success signature.' }
     Write-Host 'PASS: a failed sync cannot report success, even with previously built packages.'
 
     # This is the same removal handler called by the maintenance page.

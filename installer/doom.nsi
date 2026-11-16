@@ -74,6 +74,7 @@ Var ConfigSummary
 Var WslDistro
 Var WslCheck
 Var WslCombo
+Var WslSelectionLoaded
 Var ConfigPath
 Var LegacyConfigPath
 Var WslCommandPath
@@ -139,7 +140,7 @@ Page custom InstallSummaryCreate
 !insertmacro MUI_PAGE_INSTFILES
 
 !define MUI_FINISHPAGE_TITLE "${PRODUCT} is ready"
-!define MUI_FINISHPAGE_TEXT "Packages have been downloaded and compiled, so Doom is ready to use.$\r$\n$\r$\nA shortcut has been added to your Desktop and Start Menu. To use the command line tools, open a NEW terminal (the existing ones will not have picked up the PATH change yet) and run:$\r$\n$\r$\n    doom doctor"
+!define MUI_FINISHPAGE_TEXT "Required package setup is complete. Native optimization can continue as you use Emacs unless you selected pre-compilation.$\r$\n$\r$\nTo use the command line tools, open a NEW terminal (existing terminals may still have the old PATH) and run:$\r$\n$\r$\n    doom doctor"
 !define MUI_FINISHPAGE_RUN
 !define MUI_FINISHPAGE_RUN_TEXT "Launch Doom Emacs now"
 !define MUI_FINISHPAGE_RUN_FUNCTION LaunchDoom
@@ -222,7 +223,7 @@ Function WslCreate
   Pop $0
   ${NSD_CreateDropList} 0 40u 100% 100u ""
   Pop $WslCombo
-  nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -NonInteractive -File "$PLUGINSDIR\wsl-integration.ps1" -List -OutFile "$PLUGINSDIR\wsl-list.txt"'
+  nsExec::ExecToLog '"$SYSDIR\WindowsPowerShell\v1.0\powershell.exe" -NoProfile -ExecutionPolicy Bypass -NonInteractive -File "$PLUGINSDIR\wsl-integration.ps1" -List -SelectionRoot "$INSTDIR" -SelectionRegistryKey "HKCU:\${REGKEY}" -OutFile "$PLUGINSDIR\wsl-list.txt"'
   Pop $0
   ${If} $0 == 0
     FileOpen $0 "$PLUGINSDIR\wsl-list.txt" r
@@ -240,14 +241,25 @@ Function WslCreate
     ${Loop}
     FileClose $0
   ${EndIf}
+  ${If} $WslSelectionLoaded == ""
+    ${If} $WslDistro == ""
+      ReadINIStr $WslDistro "$PLUGINSDIR\wsl-list.txt.ini" "selection" "Suggested"
+    ${EndIf}
+    StrCpy $WslSelectionLoaded "1"
+  ${EndIf}
   ${If} $WslDistro != ""
     ${NSD_Check} $WslCheck
     ${NSD_CB_SelectString} $WslCombo $WslDistro
   ${Else}
     EnableWindow $WslCombo 0
   ${EndIf}
-  ${NSD_CreateLabel} 0 65u 100% 90u "Adds doom and doom-wsl under the selected Linux user's ~/.local/share/doom-windows/ and marked PATH blocks to Bash/Zsh profiles. Restart the shell afterward.$\r$\n$\r$\nDoom, its packages, configuration and GUI server run in Windows. doom-wsl --wait supports editor workflows. A GUI server cannot create WSL terminal frames.$\r$\n$\r$\nUninstall removes our commands and PATH blocks. Unregistering a WSL distribution or deleting the app folder bypasses normal cleanup."
+  ReadINIStr $1 "$PLUGINSDIR\wsl-list.txt.ini" "selection" "Status"
+  nsDialogs::CreateControl EDIT ${DEFAULT_STYLES}|${WS_TABSTOP}|${ES_MULTILINE}|${ES_AUTOVSCROLL}|${ES_READONLY}|${WS_VSCROLL} ${WS_EX_CLIENTEDGE} 0 60u 100% 36u "$1"
   Pop $0
+  ${NSD_Edit_SetReadOnly} $0 1
+  nsDialogs::CreateControl EDIT ${DEFAULT_STYLES}|${WS_TABSTOP}|${ES_MULTILINE}|${ES_AUTOVSCROLL}|${ES_READONLY}|${WS_VSCROLL} ${WS_EX_CLIENTEDGE} 0 100u 100% 48u "Adds doom and doom-wsl under ~/.local/share/doom-windows/ and marked Bash/Zsh PATH blocks. Restart the shell afterward. Existing integrations are kept when this option is cleared.$\r$\n$\r$\nDoom, packages, configuration and the GUI server run in Windows. doom-wsl --wait supports editor workflows. WSL terminal frames are not supported."
+  Pop $0
+  ${NSD_Edit_SetReadOnly} $0 1
   nsDialogs::Show
 FunctionEnd
 
@@ -408,6 +420,7 @@ Function .onInit
   File "repair-doom.ps1"
   File "native-process.ps1"
   File "wsl-integration.ps1"
+  File "package-sync.ps1"
   SetOutPath "$PLUGINSDIR\bridge"
   File /r "files\bridge\*.*"
   SetOutPath "$PLUGINSDIR"
@@ -501,7 +514,7 @@ SectionEnd
 ; defined by its declaration, so referencing ${SecAOT} earlier expands to nothing
 ; and SectionGetFlags fails with a bare usage error naming neither the section
 ; nor the line.
-Section "Pre-compile all packages" SecAOT
+Section /o "Native pre-compilation (slower setup, optional)" SecAOT
 SectionEnd
 
 Section "Desktop shortcut" SecDesktop
@@ -541,7 +554,9 @@ Section "-Configure" SecConfigure
   ${If} $WslDistro != ""
     StrCpy $R0 '$R0 -WslDistro "$WslDistro"'
   ${EndIf}
-  ${IfNot} ${SectionIsSelected} ${SecAOT}
+  ${If} ${SectionIsSelected} ${SecAOT}
+    StrCpy $R0 "$R0 -AOT"
+  ${Else}
     StrCpy $R0 "$R0 -NoAOT"
   ${EndIf}
   ${IfNot} ${SectionIsSelected} ${SecPath}
@@ -563,8 +578,8 @@ Section "-Configure" SecConfigure
   ; launch dies with "(void-variable doom-modules)", which tells the user nothing.
   ; An installer that finishes and leaves the program unable to start has not
   ; finished. It is the slow part, which is why the details pane is open.
-  DetailPrint "Configuring and downloading packages."
-  DetailPrint "This takes several minutes. Package names will scroll past below."
+  DetailPrint "Checking required packages and reusing compatible builds."
+  DetailPrint "First-time setup downloads packages; repeated setup uses the existing package tree."
   ${If} ${SectionIsSelected} ${SecAOT}
     DetailPrint "Pre-compiling packages as well, so expect roughly twice that."
   ${EndIf}

@@ -1,5 +1,6 @@
 [CmdletBinding()]
-param([switch]$List, [string]$OutFile)
+param([switch]$List, [string]$OutFile, [string]$SelectionRoot,
+    [string]$SelectionRegistryKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\DoomEmacs')
 . (Join-Path $PSScriptRoot 'native-process.ps1')
 $script:DoomWslSourceRoot = $PSScriptRoot
 
@@ -20,6 +21,58 @@ function Get-DoomWslDistributions {
         if ($name -and $name -notmatch '^docker-desktop(?:-data)?$' -and $name -notmatch '["\r\n]') {
             [pscustomobject]@{ Name = $name; Id = $child.PSChildName }
         }
+    }
+}
+
+function Get-DoomWslSelection {
+    param([string]$Root, [string]$Key)
+    $distributions = @(Get-DoomWslDistributions | Sort-Object Name)
+    $saved = @()
+    $preferred = ''
+    $readFailed = $false
+    try {
+        $registration = Get-ItemProperty -LiteralPath $Key -ErrorAction SilentlyContinue
+        # Never borrow another installation's integration history.
+        if ($registration.InstallLocation -eq $Root) {
+            $preferred = [string]$registration.LastWslDistributionId
+            if ($registration.WslIntegrations) { $saved = @($registration.WslIntegrations | ConvertFrom-Json) }
+        }
+        $settingsPath = Join-Path $Root 'wsl-bridge.json'
+        $manifestPath = Join-Path $Root 'install-manifest.json'
+        if (Test-Path -LiteralPath $settingsPath) {
+            $saved = @((Get-Content -LiteralPath $settingsPath -Raw -Encoding UTF8 | ConvertFrom-Json).integrations)
+        } elseif (Test-Path -LiteralPath $manifestPath) {
+            $saved = @((Get-Content -LiteralPath $manifestPath -Raw -Encoding UTF8 | ConvertFrom-Json).wsl)
+        }
+    } catch { $readFailed = $true }
+    $saved = @($saved | Where-Object { $_ -and $_.distributionId })
+    if (-not $preferred -and $saved.Count) { $preferred = $saved[-1].distributionId }
+    $suggested = ''
+    $statuses = @()
+    foreach ($entry in $saved) {
+        $current = @($distributions | Where-Object { $_.Id -eq $entry.distributionId })
+        if ($current.Count -eq 1) {
+            $statuses += "$($current[0].Name): saved connection; select to check or repair."
+            if ($entry.distributionId -eq $preferred) { $suggested = $current[0].Name }
+        } else {
+            $statuses += "$($entry.distro): previous registration not found; its data and saved record are kept."
+        }
+    }
+    if ($readFailed) { $statuses += 'Some saved WSL settings could not be read. Existing integrations are kept.' }
+    if (-not $distributions.Count) { $statuses += 'No registered user distributions found. Windows installation can continue without WSL.' }
+    elseif (-not $saved.Count) { $statuses += 'Choose a distribution to add integration, or continue without it.' }
+    return [pscustomobject]@{ Distributions = $distributions; Suggested = $suggested; Status = ($statuses -join ' ') }
+}
+
+function Save-DoomWslRegistryState {
+    param([string]$Root, [string]$Key, $Settings, $Selected)
+    if (-not (Test-Path -LiteralPath $Key)) { New-Item -Path $Key -Force | Out-Null }
+    New-ItemProperty -LiteralPath $Key -Name InstallLocation -Value $Root -PropertyType String -Force | Out-Null
+    $json = ConvertTo-Json -InputObject @($Settings.integrations) -Depth 8 -Compress
+    New-ItemProperty -LiteralPath $Key -Name WslIntegrations -Value $json -PropertyType String -Force | Out-Null
+    if ($Selected) {
+        New-ItemProperty -LiteralPath $Key -Name LastWslDistributionId -Value $Selected.distributionId -PropertyType String -Force | Out-Null
+        New-ItemProperty -LiteralPath $Key -Name LastWslDistribution -Value $Selected.distro -PropertyType String -Force | Out-Null
     }
 }
 
@@ -101,8 +154,8 @@ function Remove-DoomWslIntegration {
     param($Entry)
     $registered = @(Get-DoomWslDistributions | Where-Object { $_.Id -eq $Entry.distributionId })
     if (-not $registered.Count) {
-        # A removed distribution has no remaining files. A replacement with the
-        # same name has a different id and must never be changed.
+        # Missing registration is not proof that its backing data is gone.
+        # Never direct cleanup at a replacement with the same name.
         return
     }
     $helper = Get-Content -LiteralPath (Join-Path (Get-DoomWslBridgeFiles) 'integration.sh') -Raw
@@ -111,5 +164,8 @@ function Remove-DoomWslIntegration {
 
 if ($List) {
     if (-not $OutFile) { throw '-OutFile is required with -List.' }
-    [IO.File]::WriteAllLines($OutFile, [string[]]@(Get-DoomWslDistributions | Sort-Object Name | ForEach-Object Name), [Text.Encoding]::Unicode)
+    $selection = Get-DoomWslSelection -Root $SelectionRoot -Key $SelectionRegistryKey
+    [IO.File]::WriteAllLines($OutFile, [string[]]@($selection.Distributions | ForEach-Object Name), [Text.Encoding]::Unicode)
+    [IO.File]::WriteAllLines(($OutFile + '.ini'), [string[]]@('[selection]',
+        "Suggested=$($selection.Suggested)", "Status=$($selection.Status)"), [Text.Encoding]::Unicode)
 }

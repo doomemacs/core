@@ -37,6 +37,33 @@ To recompile an existing staging tree:
 Management scripts are embedded from source at compile time, so stale staging
 cannot omit the install engine or uninstaller.
 
+* Package compilation and reinstall speed
+
+Setup always performs the required package sync. Native ahead-of-time compilation
+is optional and unchecked by default; Emacs can optimize loaded Lisp in the
+background. Select the native pre-compilation component, or pass =-AOT= to the
+PowerShell engine, to wait for this optimization during setup. =-NoAOT= remains
+accepted and takes precedence. =-RebuildPackages= explicitly rebuilds all packages.
+
+After a successful sync, the manifest records the Emacs version, native ABI,
+system configuration, executable hash, bundled compiler/runtime archive hashes
+and installation location. Compatible reinstalls use incremental sync. A change
+to this signature, a failed/interrupted previous sync, or an existing package tree
+without a confirmed signature requests =--rebuild=. A legacy installation may
+therefore need one rebuild before subsequent reinstalls become incremental.
+Existing native caches are retained; Emacs separates native code by version/ABI.
+Config and Doom changes still go through Doom's normal package dependency checks.
+Setup does not request an upgrade of all packages with =-u=.
+
+Both compiler output streams are drained concurrently and streamed as plain text
+to NSIS, removing ANSI colors and cursor movement. A failed sync invalidates the
+success record before any build starts, so old packages cannot mask a failure.
+
+This reduces compilation work; setup still extracts the full payload in place.
+Version directories, transactional switching, editor session handoff and
+rollback are not implemented. It does not terminate Emacs or WSL to obtain a
+quick restart, and no instant reinstall timing is claimed.
+
 * Installation and removal
 
 The default root is =%LOCALAPPDATA%\Programs\DoomEmacs=. The installer bundles GNU
@@ -81,6 +108,8 @@ Run the following with Windows PowerShell 5.1:
 .\installer\test\snapshot.ps1 -SelfTest
 .\installer\test\installer-selftest.ps1 -MakeNsis 'C:\path\to\makensis.exe'
 .\installer\test\wsl-bridge-selftest.ps1
+.\installer\test\wsl-selection-selftest.ps1
+.\installer\test\package-sync-selftest.ps1
 # Optional real WSL/Windows runtime checks, using temporary Linux homes:
 .\installer\test\wsl-bridge-selftest.ps1 -Distribution Ubuntu
 .\installer\test\windows-client-selftest.ps1 -EmacsRoot 'C:\staging\emacs' -Distribution Ubuntu
@@ -145,13 +174,26 @@ unrelated Linux editor. =--wait= uses the normal Emacs server completion workflo
 
 Setup can also be driven with =/WslDistro=Ubuntu=, or by passing
 =-WslDistro Ubuntu= to the PowerShell engine. Rerunning setup can add another
-distribution; existing integrations are kept. The ownership metadata is stored
+distribution; existing integrations are kept. Every interactive installation
+shows the WSL page, including reinstalls and when the previous distribution is
+missing. An available previous registration is suggested by its id, even after
+renaming. A missing registration is reported without selecting a replacement
+by name or removing its saved history. Clearing the checkbox preserves existing
+connections. The installer does not install, upgrade or unregister distributions.
+
+WSL integration records are mirrored under the installation's HKCU uninstall key
+as =WslIntegrations= (JSON), =LastWslDistributionId= and =LastWslDistribution=.
+The JSON files remain the ownership/recovery metadata; the registry supports
+future setup selection. Older installations without these registry values are
+recognized from their existing files. The ownership metadata is stored
 in =wsl-bridge.json= and the installation manifest before Linux hooks are changed.
 Removal targets the recorded Linux user, checks script hashes and deletes only
 the exact managed PATH blocks. Edited scripts/blocks are preserved with an error.
 If the distribution or its disk is inaccessible, Windows removal stops before
 deleting the scripts and manifest, so cleanup can be retried. An unregistered
-distribution is already gone; a replacement with the same name is not touched.
+distribution may still have detached backing data; a replacement with the same
+name is not touched. Missing registrations currently skip cleanup; this is not
+proof that all files from the previous integration were removed.
 
 Deleting the Windows folder directly bypasses this cleanup and leaves PATH and
 WSL hooks. Use the installer's maintenance option or Windows Settings instead.

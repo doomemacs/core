@@ -48,11 +48,10 @@ param(
     [switch]$NoDesktopShortcut,
     [switch]$NoStartMenuShortcut,
     [switch]$NoSync,
-    # Ahead-of-time native compilation is the default. Doom otherwise compiles
-    # packages lazily in the background as you happen to use them, which means
-    # the bundled 70MB toolchain buys nothing for the first several sessions.
-    # Doing it up front is the whole point of shipping the toolchain.
+    # Native optimization is optional; byte compilation remains mandatory.
+    [switch]$AOT,
     [switch]$NoAOT,
+    [switch]$RebuildPackages,
     [switch]$OwnInstallRoot,
     [string]$WslDistro,
     [string]$RegistryKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\DoomEmacs',
@@ -61,6 +60,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $sw = [System.Diagnostics.Stopwatch]::StartNew()
+$explicitDoomDir = $PSBoundParameters.ContainsKey('DoomDir')
 
 $scriptDir = $PSScriptRoot
 if (-not $scriptDir) { $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path }
@@ -69,6 +69,7 @@ if (-not $scriptDir) { $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.P
 # uninstaller cannot drift on how PATH is read or written.
 . (Join-Path $scriptDir 'env-path.ps1')
 . (Join-Path $scriptDir 'wsl-integration.ps1')
+. (Join-Path $scriptDir 'package-sync.ps1')
 
 # Normalise separators up front. These paths get written into the manifest and
 # later compared with -eq by the uninstaller, so a caller passing forward slashes
@@ -142,6 +143,9 @@ if ($InstallRoot.Length -gt 90) {
 $existingManifestPath = Join-Path $InstallRoot $MANIFEST_FILE
 $existing = Test-Path $existingManifestPath
 $previousManifest = if ($existing) { Get-Content $existingManifestPath -Raw | ConvertFrom-Json } else { $null }
+if (-not $explicitDoomDir -and $previousManifest.doomDir) {
+    $DoomDir = [IO.Path]::GetFullPath([string]$previousManifest.doomDir)
+}
 if ($existing -and -not $Force) {
     throw "An existing install was found at $InstallRoot. Uninstall it first, or pass -Force to overwrite."
 }
@@ -251,7 +255,7 @@ if ($SourceMode -eq 'InPlace') {
     # stage-payloads.ps1 intentionally stages only the payload. Standalone
     # Staging/Cache/Download installs still need their engine, uninstaller, and
     # shared PATH helper beside the payload, just like the compiled installer.
-    foreach ($name in @('install-doom.ps1', 'uninstall-doom.ps1', 'env-path.ps1', 'repair-doom.ps1', 'native-process.ps1', 'wsl-integration.ps1')) {
+    foreach ($name in @('install-doom.ps1', 'uninstall-doom.ps1', 'env-path.ps1', 'repair-doom.ps1', 'native-process.ps1', 'wsl-integration.ps1', 'package-sync.ps1')) {
         Copy-Item (Join-Path $scriptDir $name) (Join-Path $InstallRoot $name) -Force
     }
     $bridgeSource = Join-Path $scriptDir 'files\bridge'
@@ -273,7 +277,7 @@ foreach ($d in (Get-ChildItem $InstallRoot -Directory -ErrorAction SilentlyConti
 foreach ($f in (Get-ChildItem $InstallRoot -File -ErrorAction SilentlyContinue)) {
     if ($previousManifest -and -not $rootOwned -and -not @($previousManifest.entries | Where-Object {
         $_.kind -eq 'file' -and $_.path -eq $f.FullName -and $_.state -eq 'created'
-    }).Count -and $f.Name -notin @('install-doom.ps1', 'uninstall-doom.ps1', 'env-path.ps1', 'repair-doom.ps1', 'native-process.ps1', 'wsl-integration.ps1')) { continue }
+    }).Count -and $f.Name -notin @('install-doom.ps1', 'uninstall-doom.ps1', 'env-path.ps1', 'repair-doom.ps1', 'native-process.ps1', 'wsl-integration.ps1', 'package-sync.ps1')) { continue }
     Add-Entry -Kind 'file' -Path $f.FullName -State 'created'
 }
 $fileCount = (Get-ChildItem $InstallRoot -Recurse -File -ErrorAction SilentlyContinue | Measure-Object).Count
@@ -449,6 +453,10 @@ $manifestPath = Join-Path $InstallRoot $MANIFEST_FILE
 Add-Entry -Kind 'file' -Path $manifestPath -State 'created' -Note 'install ownership manifest'
 $manifest['entries']      = $script:manifestEntries.ToArray()
 if ($previousManifest.wsl) { $manifest['wsl'] = @($previousManifest.wsl) }
+if ($previousManifest.packageSync) { $manifest['packageSync'] = $previousManifest.packageSync }
+if ($manifest['wsl']) {
+    Save-DoomWslRegistryState -Root $InstallRoot -Key $REGKEY -Settings ([pscustomobject]@{ integrations = @($manifest['wsl']) })
+}
 try {
     $json = ConvertTo-Json -InputObject $manifest -Depth 8
     Set-Content -Path $manifestPath -Value $json -Encoding utf8
@@ -468,6 +476,8 @@ if ($WslDistro) {
     Add-Entry -Kind 'dir' -Path (Join-Path $InstallRoot 'bridge-state') -State 'created' -Note 'Windows-local Emacs server state'
     try {
         $integration = Add-DoomWslIntegration -InstallRoot $InstallRoot -DoomDir $DoomDir -Distribution $WslDistro
+        $settings = Get-Content -LiteralPath (Join-Path $InstallRoot 'wsl-bridge.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+        Save-DoomWslRegistryState -Root $InstallRoot -Key $REGKEY -Settings $settings -Selected $integration
         Write-Ok "Windows doom and GUI client commands configured for $($integration.user) in $WslDistro"
     } finally {
         $settingsPath = Join-Path $InstallRoot 'wsl-bridge.json'
@@ -482,9 +492,7 @@ if ($WslDistro) {
 # --------------------------------------------------------------- first sync
 
 if (-not $NoSync) {
-    Write-Stage 'Downloading and compiling packages'
-    Write-Info 'This is the slow part. Several hundred packages are cloned and'
-    Write-Info 'byte-compiled; expect this to take a number of minutes.'
+    Write-Stage 'Checking package builds'
 
     # Not optional in any meaningful sense. Doom without a sync is not a lighter
     # Doom, it is a broken one: doom-modules never gets defined and the first
@@ -492,21 +500,17 @@ if (-not $NoSync) {
     # the program unable to start has not finished its job.
     $doomCmd = Join-Path $InstallRoot 'bin\doom.cmd'
     if (Test-Path $doomCmd) {
-        $syncArgs = 'sync --force'
-        if ($NoAOT) {
-            Write-Info 'lazy compilation: packages compile in the background as you use them'
-        } else {
-            $syncArgs += ' --aot'
-            Write-Info 'ahead-of-time native compilation enabled; this roughly doubles the wait'
-            Write-Info 'but means Doom is fast from the very first launch'
-        }
-
-        # stdin redirected from NUL. A sync can reach an interactive prompt -- a
-        # "Select coding system" question was observed at the end of one run --
-        # and during an unattended install there is nobody to answer it. Reading
-        # EOF turns a hang into an immediate, recoverable error.
-        & cmd.exe /c "`"$doomCmd`" $syncArgs < NUL"
-        $syncExit = $LASTEXITCODE
+        $runtime = Get-DoomRuntimeSignature -Root $InstallRoot
+        $hasPackages = @(Get-ChildItem -LiteralPath (Join-Path $InstallRoot 'doom\.local\straight') -Filter 'build-*' -Directory -ErrorAction SilentlyContinue).Count -gt 0
+        $plan = Get-DoomPackageSyncPlan -Runtime $runtime -Previous $previousManifest.packageSync -HasPackages $hasPackages -AheadOfTime ($AOT -and -not $NoAOT) -Rebuild ([bool]$RebuildPackages)
+        Write-Info $plan.Reason
+        if ($AOT -and -not $NoAOT) { Write-Info 'Waiting for native optimization of packages that need building (optional).' }
+        else { Write-Info 'Native optimization is deferred until use; existing compatible native code is kept.' }
+        # Invalidate the success record BEFORE invoking builds. An interrupted or
+        # failed rebuild must not leave an old success record for a partial tree.
+        $manifest['packageSync'] = @{ schema = 1; success = $false; runtime = $runtime }
+        $manifest | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
+        $syncExit = Invoke-DoomPackageSync -Root $InstallRoot -Config $DoomDir -Arguments $plan.Arguments
 
         # Trust the tree, not just the exit code: confirm packages actually landed.
         $built = @(Get-ChildItem (Join-Path $InstallRoot 'doom\.local\straight') -Filter 'build-*' -Directory -ErrorAction SilentlyContinue)
@@ -516,6 +520,8 @@ if (-not $NoSync) {
         }
 
         if ($syncExit -eq 0 -and $pkgCount -gt 0) {
+            $manifest['packageSync'] = @{ schema = 1; success = $true; runtime = $runtime; completedUtc = (Get-Date).ToUniversalTime().ToString('o') }
+            $manifest | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $manifestPath -Encoding UTF8
             Write-Ok "sync complete ($pkgCount packages)"
         } else {
             Write-Warn "doom sync failed (exit $syncExit, $pkgCount packages built)"
