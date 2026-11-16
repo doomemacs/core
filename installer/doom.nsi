@@ -518,16 +518,18 @@ Function InstallSummaryCreate
   nsDialogs::Create 1018
   Pop $0
   !insertmacro LocationField "Program and dependencies (select text, Ctrl+C):" "$INSTDIR" 0u 10u
-  !insertmacro LocationField "Windows packages and caches:" "$INSTDIR\doom\.local" 28u 38u
-  !insertmacro LocationField "Configured folder:" "$ConfigPath" 56u 66u
+  !insertmacro LocationField "Windows packages and caches:" "$INSTDIR\doom\.local" 26u 36u
+  !insertmacro LocationField "Configured folder:" "$ConfigPath" 52u 62u
   ${If} ${SectionIsSelected} ${SecPath}
-    !insertmacro LocationField "Entry added to Windows user PATH:" "$INSTDIR\bin" 84u 94u
+    !insertmacro LocationField "Entry added to Windows user PATH:" "$INSTDIR\bin" 78u 88u
   ${EndIf}
   StrCpy $1 ""
   ${If} $WslDistro != ""
     StrCpy $1 "WSL distribution: $WslDistro. Adds Windows doom and doom-wsl commands and marked Linux shell PATH blocks.$\r$\n"
   ${EndIf}
-  ${NSD_CreateLabel} 0 113u 100% 45u "$1Uninstall through setup or Windows Settings. Deleting the folder leaves integration behind. Provided AS IS, without warranty; see LICENSE and bundled licenses."
+  ; Keep the footer inside the 150-DU page. Wrap long distro names and allow
+  ; scrolling at larger text sizes instead of clipping a fixed-height label.
+  nsDialogs::CreateControl EDIT ${DEFAULT_STYLES}|${WS_TABSTOP}|${ES_MULTILINE}|${ES_AUTOVSCROLL}|${ES_READONLY}|${WS_VSCROLL} ${WS_EX_CLIENTEDGE} 0 106u 100% 44u "$1Uninstall through setup or Windows Settings. Deleting the folder leaves integration behind. Provided AS IS, without warranty; see LICENSE and bundled licenses."
   Pop $0
   nsDialogs::Show
 FunctionEnd
