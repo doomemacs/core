@@ -324,11 +324,15 @@ Otherwise, `en/disable-command' (in novice.el.gz) is hardcoded to write them to
                       ;; compatibility fallbacks
                       "gnutls-cli -p %p %h")))
 
-;; DEPRECATED: Interactive sessions won't be able to interact with Straight
-;;   (or Elpaca) in the future, so this is temporary.
-(with-eval-after-load 'straight
-  (require 'doom-straight)
-  (doom-initialize-packages))
+;; Trust the contents of $EMACSDIR and $DOOMDIR, because the user will likely be
+;; working with either/both.
+(when (boundp 'trusted-content)
+  (add-to-list 'trusted-content (abbreviate-file-name (file-truename doom-emacs-dir)))
+  (add-to-list 'trusted-content (abbreviate-file-name (file-truename doom-user-dir))))
+
+;; Ensure .dir-locals.el in $EMACSDIR and $DOOMDIR are always respected
+(add-to-list 'safe-local-variable-directories doom-emacs-dir)
+(add-to-list 'safe-local-variable-directories doom-user-dir)
 
 
 ;;; ** Runtime optimizations
@@ -372,19 +376,6 @@ Otherwise, `en/disable-command' (in novice.el.gz) is hardcoded to write them to
 ;; emacs-lsp/lsp-ui#613.
 (when (boundp 'pgtk-wait-for-event-timeout)
   (setq pgtk-wait-for-event-timeout 0.001))
-
-
-;;; ** Accommodating Doom itself
-
-;; Trust the contents of $EMACSDIR and $DOOMDIR, because the user will likely be
-;; working with either/both.
-(when (boundp 'trusted-content)
-  (add-to-list 'trusted-content (abbreviate-file-name (file-truename doom-emacs-dir)))
-  (add-to-list 'trusted-content (abbreviate-file-name (file-truename doom-user-dir))))
-
-;; Ensure .dir-locals.el in $EMACSDIR and $DOOMDIR are always respected
-(add-to-list 'safe-local-variable-directories doom-emacs-dir)
-(add-to-list 'safe-local-variable-directories doom-user-dir)
 
 
 ;;
@@ -2040,6 +2031,12 @@ the `--debug-init' option to view a complete error backtrace."
                 debug-on-error-from-init-file debug-on-error)))
     (when debug-on-error-should-be-set
       (setq debug-on-error debug-on-error-from-init-file))))
+
+;; DEPRECATED: Interactive sessions won't be able to interact with Straight
+;;   (or Elpaca) in the future, so this is temporary.
+(with-eval-after-load 'straight
+  (require 'doom-straight)
+  (doom-initialize-packages))
 
 (provide 'doom-emacs)
 ;;; doom-emacs.el
