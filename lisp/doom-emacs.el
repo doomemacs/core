@@ -1112,26 +1112,30 @@ windows, switch to `doom-fallback-buffer'. Otherwise, delegate to original
           (condition-case e
               (when-let* ((face (car map))
                           (font (cdr map)))
+                ;; A tty frame's font attributes are placeholders (e.g. a
+                ;; :height of 1). Recording them in the user theme would
+                ;; clobber the fonts of GUI frames in the same session the next
+                ;; time a theme is enabled (and faces are recalculated).
                 (when (display-multi-font-p frame)
                   (set-face-attribute face frame
                                       :width 'normal :weight 'normal
-                                      :slant 'normal :font font))
-                (custom-push-theme
-                 'theme-face face 'user 'set
-                 (let* ((base-specs (cadr (assq 'user (get face 'theme-face))))
-                        (base-specs (or base-specs '((t nil))))
-                        (attrs '(:family :foundry :slant :weight :height :width))
-                        (new-specs nil))
-                   (dolist (spec base-specs)
-                     (let ((display (car spec))
-                           (plist (copy-tree (nth 1 spec))))
-                       (when (or (memq display '(t default))
-                                 (face-spec-set-match-display display frame))
-                         (dolist (attr attrs)
-                           (setq plist (plist-put plist attr (face-attribute face attr)))))
-                       (push (list display plist) new-specs)))
-                   (nreverse new-specs)))
-                (put face 'face-modified nil))
+                                      :slant 'normal :font font)
+                  (custom-push-theme
+                   'theme-face face 'user 'set
+                   (let* ((base-specs (cadr (assq 'user (get face 'theme-face))))
+                          (base-specs (or base-specs '((t nil))))
+                          (attrs '(:family :foundry :slant :weight :height :width))
+                          (new-specs nil))
+                     (dolist (spec base-specs)
+                       (let ((display (car spec))
+                             (plist (copy-tree (nth 1 spec))))
+                         (when (or (memq display '(t default))
+                                   (face-spec-set-match-display display frame))
+                           (dolist (attr attrs)
+                             (setq plist (plist-put plist attr (face-attribute face attr frame)))))
+                         (push (list display plist) new-specs)))
+                     (nreverse new-specs)))
+                  (put face 'face-modified nil)))
             (error
              (if (string-prefix-p "Font not available" (error-message-string e))
                  (signal 'doom-font-error (list (font-get (cdr map) :family)))
