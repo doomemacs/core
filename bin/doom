@@ -200,7 +200,6 @@ SEE ALSO:
      &multiple
      (loads    ("-L" "--load" "--strict-load" file) "Load elisp `FILE' before executing `COMMAND'")
      (evals    ("-E" "--eval" form) "Evaluate `FORM' before executing commands")
-     &input input
      &context context
      &args _)
   "OPTIONS:

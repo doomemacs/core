@@ -511,14 +511,12 @@ Return nil if CLI (a `doom-cli') has no explicit documentation."
       (dolist (type `((&args    . ,args)
                       (&cli     . ,cli)
                       (&context . ,context)
-                      (&input
-                       . ,(if (doom-cli-context-pipe-p context :in t)
-                              (with-current-buffer (doom-cli-context-stdin context)
-                                (buffer-string))))
                       (&rest    . ,rest)
                       (&whole   . ,(doom-cli-context-whole context))))
         (when-let* ((var (car (alist-get (car type) argspec))))
-          (setf (alist-get var alist) (cdr type)))))
+          (setf (alist-get var alist) (cdr type))))
+      (when-let* ((var (car (alist-get '&input argspec))))
+        (setf (alist-get var alist) (doom-cli-context-input context))))
     alist))
 
 (defun doom-cli--command (target &optional notype?)
@@ -992,7 +990,20 @@ considered as well."
            (member (cons type 'local) pipes))
          t)))
 
-(defun doom-cli-context-sid (context &optional nodate?)
+(defun doom-cli-context-input (context)
+  "Return what was piped into CONTEXT's session as a string, or nil."
+  (when (doom-cli-context-pipe-p context :in t)
+    (with-current-buffer (doom-cli-context-stdin context)
+      (unless (doom-cli-context-get context :stdin-read?)
+        (doom-cli-context-put context :stdin-read? t)
+        (goto-char (point-max))
+        (let (line)
+          (while (setq line (ignore-errors (read-from-minibuffer "")))
+            (insert line "\n")))
+        (ignore-errors (delete-char -1)))  ; drop trailing newline
+      (buffer-string))))
+
+(defun doom-cli-context-sid(context &optional nodate?)
   "Return a unique session identifier for CONTEXT."
   (if nodate?
       (doom-cli-context-pid context)
@@ -1159,11 +1170,6 @@ benchmark be shown."
 
     (when (doom-cli-context-pipe-p context :out t)
       (setq doom-print-backend nil))
-    (when (doom-cli-context-pipe-p context :in)
-      (with-current-buffer (doom-cli-context-stdin context)
-        (while (if-let* ((in (ignore-errors (read-from-minibuffer ""))))
-                   (insert in "\n")
-                 (ignore-errors (delete-char -1))))))
 
     ;; Output control. Pipes stdout + stderr to log files (without showing
     ;; stderr). `message' out is treated a stderr.
