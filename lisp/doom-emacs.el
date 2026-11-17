@@ -27,7 +27,7 @@ The functions in the hook are called with one parameter -- the
     (define-advice disable-theme (:around (fn theme) trigger-hooks)
       (when (custom-theme-enabled-p theme)
         (funcall fn theme)
-        (run-hook-with-args 'enable-theme-functions theme))))
+        (run-hook-with-args 'disable-theme-functions theme))))
 
   ;; Introduced in 29.1
   ;; In case of Emacs builds where treesit isn't built in (to avoid void-function
