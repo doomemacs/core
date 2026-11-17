@@ -1000,14 +1000,26 @@ If this is a daemon session, load them all immediately instead."
 
 ;;; ** Switch {buffer,frame,window} hooks
 
+(defvar doom--switch-buffer-origin nil)
 (defun doom-run-switch-buffer-hooks-h (&optional _)
   "Trigger `doom-switch-buffer-hook' when selecting a new buffer."
   (let ((buffer (window-buffer)))
-    (unless (or (minibufferp)
-                (minibufferp buffer)
-                (eq (window-old-buffer) buffer))
-      (with-current-buffer buffer
-        (with-delayed-gc! (run-hooks 'doom-switch-buffer-hook))))))
+    (if (or (minibufferp)
+            (minibufferp buffer))
+        ;; For commands that change the focused buffer while the minibuffer is
+        ;; selected (like `consult-buffer').
+        (unless doom--switch-buffer-origin
+          (when-let* ((window (minibuffer-selected-window)))
+            (setq doom--switch-buffer-origin
+                  (cons window (window-old-buffer window)))))
+      (let ((old-buffer
+             (if (eq (car doom--switch-buffer-origin) (selected-window))
+                 (cdr doom--switch-buffer-origin)
+               (window-old-buffer))))
+        (setq doom--switch-buffer-origin nil)
+        (unless (eq old-buffer buffer)
+          (with-current-buffer buffer
+            (with-delayed-gc! (run-hooks 'doom-switch-buffer-hook))))))))
 
 (defun doom-run-switch-window-hooks-h (&optional _)
   "Trigger `doom-switch-window-hook' when selecting a window in the same frame."
