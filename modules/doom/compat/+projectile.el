@@ -141,10 +141,19 @@ more generic, consistent, reliable, and performant `fd' or `ripgrep'."
       (if (and (functionp projectile-generic-command)
                (not (file-remote-p default-directory)))
           (funcall projectile-generic-command vcs)
-        (let ((projectile-git-submodule-command
-               (or projectile-git-submodule-command
-                   (get 'projectile-git-submodule-command 'initial-value))))
-          (funcall fn vcs)))))
+        (let* ((projectile-git-submodule-command
+                (or projectile-git-submodule-command
+                    (get 'projectile-git-submodule-command 'initial-value)))
+               (command (funcall fn vcs default-directory)))
+          ;; HACK: Projectile falls back to `projectile-generic-command' for
+          ;;   non-VCS projects, which Doom sets to a function that probes
+          ;;   the local system, so it can't be used (as is) on remotes.
+          (if (functionp command)
+              (if-let* ((projectile-git-use-fd)
+                        (fd (projectile-fd-executable-for default-directory)))
+                  (concat fd " " projectile-git-fd-args)
+                "find . -type f | cut -c3- | tr '\\n' '\\0'")
+            command)))))
 
   ;; HACK: `projectile-generic-command' doesn't typically support a function,
   ;;   but my `doom--only-use-generic-command-a' advice allows this. I do it
