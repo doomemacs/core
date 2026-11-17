@@ -428,7 +428,18 @@ Each function is passed one argument: the doom-profile being started up."
                (message "Error loading profile: %s" (error-message-string e))
                (message "Run 'doom sync' to regenerate it!"))))
         (if interactive?
-            (signal 'doom-nosync-error `(doom-initialize ,profile-id))))
+            (signal 'doom-nosync-error
+                    `(doom-initialize
+                      ,profile-id
+                      ,@(when-let* ((files (file-expand-wildcards
+                                            (doom-profile-init-file key "init.*.el"))))
+                          (list (format "Synced with Emacs %s, but this is Emacs %d.%d; run 'doom sync' with this Emacs (see $EMACS or $PATH)"
+                                        (mapconcat
+                                         (lambda (file)
+                                           (substring (file-name-base file) 5))
+                                         files ", ")
+                                        emacs-major-version
+                                        emacs-minor-version)))))))
       (unless doom-profile
         (setq doom-profile
               (make-doom-profile :name (car key)
