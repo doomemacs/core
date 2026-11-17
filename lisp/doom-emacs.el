@@ -1259,8 +1259,8 @@ them as such. Also intended as a helper for `doom--theme-is-colorscheme-p'."
         ;;   setting `doom-theme', override the latter, because they shouldn't
         ;;   be using both.
         (unless (or (eq doom-theme theme)
-                    (eq doom-theme (car-safe theme))
-                    (eq doom-theme (cdr-safe theme)))
+                    (eq theme (car-safe doom-theme))
+                    (eq theme (cdr-safe doom-theme)))
           (setq-default doom-theme theme))))))
 
 (add-hook! 'after-make-frame-functions :depth -90
