@@ -73,13 +73,13 @@ The functions in the hook are called with one parameter -- the
     (defvar safe-local-variable-directories ())
     (define-advice hack-local-variables-filter
         (:around (fn variables dir-name) backport-safe-local-variable-directories)
-      (let ((enable-local-variables
-             (if (delq nil (mapcar (lambda (dir)
-                                     (and dir-name dir
-                                          (file-equal-p dir dir-name)))
-                                   safe-local-variable-directories))
-                 :all
-               enable-local-variables)))
+      (dlet ((enable-local-variables
+              (if (delq nil (mapcar (lambda (dir)
+                                      (and dir-name dir
+                                           (file-equal-p dir dir-name)))
+                                    safe-local-variable-directories))
+                  :all
+                enable-local-variables)))
         (funcall fn variables dir-name))))
 
 
@@ -289,7 +289,7 @@ multiple frames focused at once)."
 
 Otherwise, `en/disable-command' (in novice.el.gz) is hardcoded to write them to
 `user-init-file')."
-  (let ((user-init-file custom-file))
+  (dlet ((user-init-file custom-file))
     (apply fn args)))
 
 
@@ -965,10 +965,10 @@ afterwards."
                           (doom-log 2 "start:iloader: Loading %s (%d left)" req (length packages))
                           ;; If `default-directory' doesn't exist or is
                           ;; unreadable, Emacs throws file errors.
-                          (let ((default-directory doom-emacs-dir)
-                                (inhibit-message t)
-                                (file-name-handler-alist
-                                 (list (rassq 'jka-compr-handler file-name-handler-alist))))
+                          (dlet ((default-directory doom-emacs-dir)
+                                 (inhibit-message t)
+                                 (file-name-handler-alist
+                                  (list (rassq 'jka-compr-handler file-name-handler-alist))))
                             (require req nil t)
                             t))))
                    (push req packages))
@@ -1033,7 +1033,7 @@ the frame through some other means.")
                          doom-switch-frame-hook-debounce-delay))
               (with-selected-frame fr
                 (unwind-protect
-                    (let ((inhibit-redisplay t))
+                    (dlet ((inhibit-redisplay t))
                       (run-hooks 'doom-switch-frame-hook))
                   (set-frame-parameter fr '+last-focus (current-time)))))))))))
 
@@ -1074,9 +1074,9 @@ windows, switch to `doom-fallback-buffer'. Otherwise, delegate to original
                                 (format "Buffer %s is modified; kill anyway?"
                                         buf))))
                  (user-error "Aborted")))
-             (let ((inhibit-redisplay t)
-                   buffer-list-update-hook
-                   kill-buffer-query-functions)
+             (dlet ((inhibit-redisplay t)
+                    buffer-list-update-hook
+                    kill-buffer-query-functions)
                (when (or
                       ;; if there aren't more real buffers than visible buffers,
                       ;; then there are no real, non-visible buffers left.
@@ -1245,8 +1245,8 @@ them as such. Also intended as a helper for `doom--theme-is-colorscheme-p'."
       ;; which can be contaminated by buffer-local face remaps (e.g. by
       ;; `mixed-pitch-mode'); this prevents that contamination:
       (with-temp-buffer
-        (let ((enable-theme-functions
-               (remq 'doom-enable-theme-h enable-theme-functions)))
+        (dlet ((enable-theme-functions
+                (remq 'doom-enable-theme-h enable-theme-functions)))
           (doom-run-hooks 'doom-load-theme-hook))
         ;; HACK: If the user uses `load-theme' in their $DOOMDIR instead of
         ;;   setting `doom-theme', override the latter, because they shouldn't
@@ -1492,7 +1492,7 @@ flush out with a couple RETs, which may execute the broken text in the buffer)."
       (let ((start-marker comint-last-output-start)
             (end-marker (process-mark process)))
         (when (and start-marker (< start-marker end-marker)) ;; Account for some of the IELM’s wilderness.
-          (let ((inhibit-read-only t))
+          (dlet ((inhibit-read-only t))
             ;; Make all past output read-only (disallow buffer modifications)
             (add-text-properties comint-last-input-start (1- end-marker) '(read-only t))
             ;; Disallow interleaving.
@@ -1971,7 +1971,7 @@ and whether the line count of the buffer exceeds that matching entry in
         ;; cause problems when read back, so disable nul byte detection. (Bug
         ;; #52554)
         (inhibit-null-byte-detection t))
-    (let ((debug-on-error debug-on-error-initial))
+    (dlet ((debug-on-error debug-on-error-initial))
       (condition-case-unless-debug error
           (when init-file-user
             (let ((init-file-name
