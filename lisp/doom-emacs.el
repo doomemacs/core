@@ -1150,7 +1150,17 @@ windows, switch to `doom-fallback-buffer'. Otherwise, delegate to original
                   (put face 'face-modified nil)))
             (error
              (if (string-prefix-p "Font not available" (error-message-string e))
-                 (signal 'doom-font-error (list (font-get (cdr map) :family)))
+                 ;; Don't signal an error here; that would abort the rest of
+                 ;; startup (theme included) over a cosmetic issue. Warn and
+                 ;; fall back to whatever font Emacs picked for this face.
+                 (let ((font (cdr map)))
+                   (display-warning
+                    'doom (format "%s: %s (for the `%s' face)"
+                                  (get 'doom-font-error 'error-message)
+                                  (or (and (fontp font) (font-get font :family))
+                                      font)
+                                  (car map))
+                    :error))
                (signal (car e) (cdr e))))))
         (put 'doom-font 'initialized-frames
              (cons frame (cl-delete-if-not #'frame-live-p initialized-frames))))))
