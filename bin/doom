@@ -83,7 +83,22 @@
 ;; Doom's core sets up everything we need; including `doom-*-dir' variables,
 ;; universal defaults, and autoloads for doom-*-initialize functions.
 (condition-case e
-    (let* ((bin-dir (file-name-directory (file-truename load-file-name)))
+    (let* ((script
+            ;; Emacs resolves symlinks for --load arguments, so recover this
+            ;; script's unresolved path from the command line. If it lives in a
+            ;; Doom install, then don't resolve it, otherwise an $EMACSDIR whose
+            ;; files are individually symlinked from elsewhere (e.g. the Nix
+            ;; store) is mistaken for where they point to.
+            (let ((arg (cadr (member "--load" command-line-args))))
+              (if (and arg
+                       (equal (file-truename arg) (file-truename load-file-name))
+                       (file-exists-p
+                        (expand-file-name
+                         "../early-init.el" (file-name-directory
+                                             (expand-file-name arg)))))
+                  (expand-file-name arg)
+                (file-truename load-file-name))))
+           (bin-dir (file-truename (file-name-directory script)))
            (init-file (expand-file-name "../early-init.el" bin-dir)))
       (or (and (load init-file nil 'nomessage 'nosuffix)
                (featurep 'doom))

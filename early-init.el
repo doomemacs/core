@@ -292,7 +292,13 @@
         ;;   Chemacs is used), then `user-emacs-directory' will be wrong.
         (when noninteractive
           (setq user-emacs-directory
-                (file-name-directory (file-truename load-file-name))))
+                ;; FIX: Don't resolve this file's own symlink if it already
+                ;;   lives in a Doom install, in case $EMACSDIR's files are
+                ;;   individually symlinked from elsewhere (e.g. the Nix store).
+                (let ((dir (file-truename (file-name-directory load-file-name))))
+                  (if (file-exists-p (expand-file-name "lisp/doom.el" dir))
+                      dir
+                    (file-name-directory (file-truename load-file-name))))))
       (setq user-emacs-directory (expand-file-name init-dir))
       ;; Prevent "invalid option" errors later.
       (push (cons "--init-directory" (lambda (_) (pop argv))) command-switch-alist))
