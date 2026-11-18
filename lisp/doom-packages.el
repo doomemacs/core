@@ -859,7 +859,23 @@ keys."
                          (print! (start "\r(%d/%d) Checking out %s (%s)...%s")
                                  i total package (doom-packages--abbrev-commit target-ref) esc)
                        (print! (start "\r(%d/%d) Fetching %s...%s") i total package esc)
-                       (and (straight-vc-fetch-from-remote recipe)
+                       ;; HACK: Repos are single-branch clones, so their
+                       ;;   remote only tracks the branch it was cloned from.
+                       ;;   If upstream renames or deletes it (e.g. master ->
+                       ;;   main), fetching fails forevermore. Fall through to
+                       ;;   a re-clone instead of aborting. See #6934.
+                       (and (let ((process-environment
+                                   (cons "LC_ALL=C" process-environment))
+                                  (start (with-current-buffer (straight--process-buffer)
+                                           (point-max))))
+                              (condition-case e
+                                  (straight-vc-fetch-from-remote recipe)
+                                (error
+                                 (unless (with-current-buffer (straight--process-buffer)
+                                           (save-excursion
+                                             (goto-char start)
+                                             (search-forward "couldn't find remote ref" nil t)))
+                                   (signal (car e) (cdr e))))))
                             (straight-vc-commit-present-p recipe target-ref)))
                      (straight-vc-check-out-commit recipe target-ref)
                      (or (not (eq type 'git))
