@@ -43,7 +43,19 @@ export EMACS_PLUS_NO_PATH_INJECTION=1
 # Doom respects $EMACSDIR to tell it where Doom lives. If it fails, then this is
 # either isn't bash, or it's a posix shell being directly sourced with sh, which
 # is unsupported.
-export EMACSDIR="${EMACSDIR:-$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE:-$0}")/.." && pwd)}"
+if [ -z "$EMACSDIR" ]; then
+    self="${BASH_SOURCE:-$0}"
+    # In case this script is a symlink (e.g. ~/bin/doomscript)
+    while [ -L "$self" ] && [ ! -f "$(dirname -- "$self")/../early-init.el" ]; do
+        target="$(readlink -- "$self" 2>/dev/null)" || break
+        case "$target" in
+            /*) self="$target" ;;
+            *)  self="$(dirname -- "$self")/$target" ;;
+        esac
+    done
+    EMACSDIR="$(CDPATH='' cd -- "$(dirname -- "$self")/.." && pwd)"
+fi
+export EMACSDIR
 if [ ! -f "$EMACSDIR/early-init.el" ]; then
     echo "Error: failed to load $EMACSDIR/early-init.el."
     echo
