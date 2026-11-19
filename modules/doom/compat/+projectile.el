@@ -253,8 +253,8 @@ should be activated. If they are *all* true, NAME is activated.
 
   :files FILES -- if project contains FILES; takes a string or a form comprised
     of nested (and ...) and/or (or ...) forms. Each path is relative to the
-    project root, however, if prefixed with a '.' or '..', it is relative to the
-    current buffer.
+    project root, however, if prefixed with a './' or '../', it is relative to
+    the current buffer.
 
   :match REGEXP -- if file name matches REGEXP
 
@@ -292,7 +292,7 @@ Relevant: `doom-project-hook'."
         (dolist (hook ,add-hooks)
           (add-hook ',(intern (format "%s-hook" name)) hook)))
       (cond ((or files modes when)
-             (cl-check-type files (or null list string))
+             (cl-check-type files (or list string symbol))
              (let ((fn
                     `(lambda ()
                        (and (not (bound-and-true-p ,name))
@@ -305,7 +305,21 @@ Relevant: `doom-project-hook'."
                                  ;; autoloaded files prematurely.
                                  `(eval
                                    '(project-file-exists-p!
-                                     ,(if (stringp (car files)) (cons 'and files) files))))
+                                     ,(letf!
+                                        (defun* resolve (spec)
+                                          (if (memq (car-safe spec) '(and or))
+                                              (cons (car spec) (mapcar #'resolve (cdr spec)))
+                                            ;; ./ and ../ paths are relative to
+                                            ;; the buffer, not the project root.
+                                            `(let ((file ,spec))
+                                               (if (and (stringp file)
+                                                        (string-match-p "\\`\\.\\.?\\(?:/\\|\\'\\)" file))
+                                                   (expand-file-name
+                                                    file (file-name-directory buffer-file-name))
+                                                 file))))
+                                        (resolve (if (stringp (car-safe files))
+                                                     (cons 'and files)
+                                                   files))))))
                             ,(or when t)
                             (,name 1)))))
                (if modes
