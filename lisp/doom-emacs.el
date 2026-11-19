@@ -1661,7 +1661,14 @@ flush out with a couple RETs, which may execute the broken text in the buffer)."
   (add-hook! 'hl-line-mode-hook
     (defun doom-truly-disable-hl-line-h ()
       (unless hl-line-mode
-        (kill-local-variable 'doom--hl-line-mode)))))
+        (kill-local-variable 'doom--hl-line-mode))))
+  ;; HACK: Ensure `hl-line-mode's overlays don't change the behavior of other
+  ;;   overlay-reading plugins, like smartparens.
+  (add-hook! 'hl-line-mode-hook
+    (defun doom-hl-line-highlight-last-h ()
+      (when hl-line-mode
+        (remove-hook 'post-command-hook #'hl-line-highlight t)
+        (add-hook 'post-command-hook #'hl-line-highlight 90 t)))))
 
 
 ;;;###package package
