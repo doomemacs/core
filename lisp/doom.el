@@ -550,6 +550,13 @@ Triggers `doom-after-init-hook' and sets `doom-init-time.'"
 (defun doom-startup ()
   "Fully load enabled modules and $DOOMDIR/config.el."
   (require 'doom-emacs)  ; if called from CLI
+  ;; REVIEW: Integrate into profiles in v3
+  (when noninteractive
+    (dolist (group (seq-group-by #'car (doom-module-list)))
+      (setplist (car group)
+                (cl-loop for (_ . name) in (cdr group)
+                         nconc (list name (doom-module->context
+                                           (cons (car group) name)))))))
   (run-hook-with-args 'doom-startup-functions doom-profile))
 
 (defun doom-display-benchmark-h (&optional return-p)
