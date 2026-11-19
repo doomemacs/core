@@ -167,10 +167,21 @@ on."
                              +default-cc-sp-point-after-include-p)
                      :post-handlers '(("| " "SPC")))
 
+      ;; HACK: Typing ! after /* upgrades the /* pair to this one, but
+      ;;   smartparens only removes the shorter pair's closer if the new closer
+      ;;   is longer (see `sp-insert-pair'). Both are */ here, so we're left
+      ;;   with /*!|*/*/ and have to remove the leftover ourselves.
+      (defun +default-cc-sp-delete-leftover-comment-closer-h (_id action _context)
+        (when (and (eq action 'insert)
+                   (looking-at-p "\\*/\\*/"))
+          (save-excursion (delete-char 2))))
+
       (sp-local-pair '(c-mode c++-mode objc-mode java-mode
                        c-ts-mode c++-ts-mode java-ts-mode)
                      "/*!" "*/"
-                     :post-handlers '(("||\n[i]" "RET") ("[d-1]< | " "SPC"))))
+                     :post-handlers '(+default-cc-sp-delete-leftover-comment-closer-h
+                                      ("||\n[i]" "RET")
+                                      ("[d-1]< | " "SPC"))))
 
     ;; Expand C-style comment blocks.
     (defun +default-open-doc-comments-block (&rest _ignored)
