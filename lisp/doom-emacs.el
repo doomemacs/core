@@ -1563,7 +1563,7 @@ flush out with a couple RETs, which may execute the broken text in the buffer)."
   ;; much data and grind Emacs' GC to a halt or crash. Also rate-limit expensive
   ;; calls to `comint-truncate-buffer'.
   (autoload 'comint-truncate-buffer "comint" nil t)
-  (add-hook! 'compilation-filter-hook
+  (add-hook! 'compilation-filter-hook :append
     (defun doom-comint-truncate-buffer-h (&optional _string)
       "Rate-limit `comint-truncate-buffer' in compilation-mode buffers."
       (if (> (buffer-size)
