@@ -277,7 +277,7 @@ so this advice catches them to regurgitates a more cogent explanation."
 
 (define-advice straight-vc-git-local-repo-name (:around (fn &rest args) barf-if-failed-clone)
   "Throw a more user-friendly error if the repo wasn't cloned properly."
-  (condition-case-unless-debug e
+  (condition-case e
       (apply fn args)
     (wrong-type-argument
      (if (eq (cadr e) 'stringp)
