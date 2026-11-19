@@ -1214,11 +1214,12 @@ windows, switch to `doom-fallback-buffer'. Otherwise, delegate to original
         ((and (featurep :system 'linux)
               (require 'dbus nil t))
          (eq 1 (car-safe (flatten-list
-                          (dbus-call-method
-                           :session "org.freedesktop.portal.Desktop"
-                           "/org/freedesktop/portal/desktop"
-                           "org.freedesktop.portal.Settings" "Read"
-                           "org.freedesktop.appearance" "color-scheme")))))
+                          (ignore-errors
+                            (dbus-call-method
+                             :session "org.freedesktop.portal.Desktop"
+                             "/org/freedesktop/portal/desktop"
+                             "org.freedesktop.portal.Settings" "Read"
+                             "org.freedesktop.appearance" "color-scheme"))))))
         ((doom-log 1 "Failed to determine if system is in dark mode")
          nil)))
 
