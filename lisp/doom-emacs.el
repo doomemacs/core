@@ -1524,7 +1524,9 @@ flush out with a couple RETs, which may execute the broken text in the buffer)."
         (when (and start-marker (< start-marker end-marker)) ;; Account for some of the IELM’s wilderness.
           (save-restriction
             (widen)
-            (dlet ((inhibit-read-only t))
+            ;; Don't mark the buffer modified, run change hooks, or leave undo
+            ;; records that could strip these properties again.
+            (with-silent-modifications
               ;; Make all past output read-only (disallow buffer modifications)
               ;; PERF: Only on the first output after an input does this have
               ;;   to reach back to the input. Afterwards, only cover the new
