@@ -559,8 +559,6 @@ keys."
     (setq straight--recipe-lookup-cache (make-hash-table :test #'eq)
           doom-packages--cli-updated-recipes t)))
 
-(defvar doom-packages--eln-output-expected nil)
-
 ;; Must be read lazily: this file is loaded before `doom-initialize' redirects
 ;; `native-comp-eln-load-path' in noninteractive sessions.
 (defun doom-packages--eln-output-path ()
@@ -576,10 +574,6 @@ keys."
 (defun doom-packages--eln-output-file (eln-name)
   "Return the expected .eln file corresponding to `eln-name'."
   (file-name-concat (doom-packages--eln-output-path) eln-name))
-
-(defun doom-packages--eln-error-file (eln-name)
-  "Return the expected .error file corresponding to `eln-name'."
-  (concat (doom-packages--eln-output-file eln-name) ".error"))
 
 (defun doom-packages--find-eln-file (eln-name)
   "Find `eln-name' on the `native-comp-eln-load-path'."
@@ -599,32 +593,20 @@ keys."
 (defun doom-packages--eln-file-outdated-p (file)
   "Check whether the corresponding .eln for `file' is outdated."
   (when (file-exists-p file)
-    (let* ((eln-name (doom-packages--eln-file-name file))
-           (eln-file (doom-packages--find-eln-file eln-name))
-           (error-file (doom-packages--eln-error-file eln-name)))
-      (cond (eln-file
-             (when (file-newer-than-file-p file eln-file)
-               (doom-log "packages:eln: %s is newer than %s" file eln-file)
-               t))
-            ((file-exists-p error-file)
-             (when (file-newer-than-file-p file error-file)
-               (doom-log "packages:eln: %s is newer than %s" file error-file)
-               t))))))
+    (when-let* ((eln-name (doom-packages--eln-file-name file))
+                (eln-file (doom-packages--find-eln-file eln-name)))
+      (when (file-newer-than-file-p file eln-file)
+        (doom-log "packages:eln: %s is newer than %s" file eln-file)
+        t))))
 
 (defun doom-packages--native-compile-done-h (file)
   "Callback fired when an item has finished async compilation."
   (when file
     (let* ((eln-name (doom-packages--eln-file-name file))
-           (eln-file (doom-packages--eln-output-file eln-name))
-           (error-file (doom-packages--eln-error-file eln-name)))
+           (eln-file (doom-packages--eln-output-file eln-name)))
       (if (file-exists-p eln-file)
           (doom-log "packages:nativecomp: Compiled %s" eln-file)
-        (let ((error-dir (file-name-directory error-file)))
-          (if (not (file-writable-p error-dir))
-              (doom-log "packages:nativecomp: failed to write %s" error-file)
-            (make-directory error-dir 'parents)
-            (write-region "" nil error-file)
-            (doom-log "packages:nativecomp: wrote %s" error-file)))))))
+        (doom-log "packages:nativecomp: No .eln produced for %s" file)))))
 
 (defun doom-packages--wait-for-native-compile-jobs ()
   "Wait for all pending async native compilation jobs."
@@ -651,21 +633,6 @@ keys."
                           and return (kill-process prc))
                (cl-incf timer 0.1))
              (sleep-for 0.1))))
-
-(defun doom-packages--write-missing-eln-errors ()
-  "Write .error files for any expected .eln files that are missing."
-  (cl-loop for file in doom-packages--eln-output-expected
-           for eln-name = (doom-packages--eln-file-name file)
-           for eln-file = (doom-packages--eln-output-file eln-name)
-           for error-file = (doom-packages--eln-error-file eln-name)
-           for error-dir = (file-name-directory error-file)
-           unless (or (file-exists-p eln-file)
-                      (file-newer-than-file-p error-file file)
-                      (not (file-writable-p error-dir)))
-           do (make-directory error-dir 'parents)
-           (write-region "" nil error-file)
-           (doom-log "Wrote %s" error-file))
-  (setq doom-packages--eln-output-expected nil))
 
 (defun doom-packages--compile-site-files ()
   "Queue async compilation for all non-doom Elisp files."
@@ -735,14 +702,10 @@ keys."
                          (and (or want-byte-compile want-native-compile)
                               (or (file-newer-than-file-p repo-dir build-dir)
                                   (file-exists-p (straight--modified-dir package))
-                                  (cl-loop with outdated = nil
-                                           for file in (doom-files-in build-dir :match "\\.el$" :full t)
+                                  (cl-loop for file in (doom-files-in build-dir :match "\\.el$" :full t)
                                            if (or (if want-byte-compile   (doom-packages--elc-file-outdated-p file))
                                                   (if want-native-compile (doom-packages--eln-file-outdated-p file)))
-                                           do (setq outdated t)
-                                           (when want-native-compile
-                                             (push file doom-packages--eln-output-expected))
-                                           finally return outdated))
+                                           return t))
                               (puthash package t straight--packages-to-rebuild))))
                      (unless (file-directory-p repo-dir)
                        (doom-packages--cli-recipes-update))
@@ -780,8 +743,7 @@ keys."
             (when (and (featurep 'native-compile)
                        straight--native-comp-available)
               (doom-packages--compile-site-files)
-              (doom-packages--wait-for-native-compile-jobs)
-              (doom-packages--write-missing-eln-errors))
+              (doom-packages--wait-for-native-compile-jobs))
             ;; HACK: Every time you save a file in a package that straight
             ;;   tracks, it is recorded in ~/.emacs.d/.local/straight/modified/.
             ;;   Typically, straight will clean these up after rebuilding, but
