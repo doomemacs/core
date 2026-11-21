@@ -579,7 +579,7 @@ keys."
 
 (defun doom-packages--eln-error-file (eln-name)
   "Return the expected .error file corresponding to `eln-name'."
-  (file-name-concat (doom-packages--eln-output-path) eln-name ".error"))
+  (concat (doom-packages--eln-output-file eln-name) ".error"))
 
 (defun doom-packages--find-eln-file (eln-name)
   "Find `eln-name' on the `native-comp-eln-load-path'."
