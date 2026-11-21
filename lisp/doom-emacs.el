@@ -1499,12 +1499,10 @@ This advice exists the mitigate first-time load times that this triggers."
   ;;   contents past the boundaries of the current prompt.
   (add-hook 'comint-exec-hook #'buffer-disable-undo)
   (define-advice comint-output-filter (:after (process _string) disable-undo)
-    (unless buffer-read-only  ; don't affect output-only buffers like `compilation-mode'
-      (with-current-buffer (process-buffer process)
+    (with-current-buffer (process-buffer process)
+      (unless buffer-read-only  ; don't affect output-only buffers like `compilation-mode'
         (when-let* ((start-marker comint-last-output-start))
-          (when (and (< start-marker
-                        (or (if process (process-mark process))
-                            (point-max-marker)))
+          (when (and (< start-marker (process-mark process))
                      (eq (char-before start-marker) ?\n)) ;; Account for some of the IELM’s wilderness.
             (buffer-enable-undo)
             (setq buffer-undo-list nil))))))
