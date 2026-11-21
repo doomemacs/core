@@ -561,7 +561,10 @@ keys."
 
 (defvar doom-packages--eln-output-expected nil)
 
-(defvar doom-packages--eln-output-path (car (bound-and-true-p native-comp-eln-load-path)))
+;; Must be read lazily: this file is loaded before `doom-initialize' redirects
+;; `native-comp-eln-load-path' in noninteractive sessions.
+(defun doom-packages--eln-output-path ()
+  (car (bound-and-true-p native-comp-eln-load-path)))
 
 (defun doom-packages--eln-file-name (file)
   "Return the short .eln file name corresponding to `file'."
@@ -572,11 +575,11 @@ keys."
 
 (defun doom-packages--eln-output-file (eln-name)
   "Return the expected .eln file corresponding to `eln-name'."
-  (file-name-concat doom-packages--eln-output-path eln-name))
+  (file-name-concat (doom-packages--eln-output-path) eln-name))
 
 (defun doom-packages--eln-error-file (eln-name)
   "Return the expected .error file corresponding to `eln-name'."
-  (file-name-concat doom-packages--eln-output-path eln-name ".error"))
+  (file-name-concat (doom-packages--eln-output-path) eln-name ".error"))
 
 (defun doom-packages--find-eln-file (eln-name)
   "Find `eln-name' on the `native-comp-eln-load-path'."

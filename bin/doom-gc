@@ -70,16 +70,17 @@
        (delq nil (mapcar #'doom-gc--repo repos))))))
 
 (defun doom-gc--eln ()
-  (if-let* ((dirs
-             (cl-delete (expand-file-name comp-native-version-dir doom-packages--eln-output-path)
-                        (when (file-directory-p doom-packages--eln-output-path)
-                          (directory-files doom-packages--eln-output-path t "^[^.]" t))
+  (if-let* ((eln-dir (doom-packages--eln-output-path))
+            (dirs
+             (cl-delete (expand-file-name comp-native-version-dir eln-dir)
+                        (when (file-directory-p eln-dir)
+                          (directory-files eln-dir t "^[^.]" t))
                         :test #'file-equal-p)))
       (progn
         (print! (start "Purging old native bytecode..."))
         (print-group!
           (dolist (dir dirs)
-            (print! (item "Deleting %S") (relpath dir doom-packages--eln-output-path))
+            (print! (item "Deleting %S") (relpath dir eln-dir))
             (delete-directory dir 'recursive))
           (print! (success "Purged %d directory(ies)" (length dirs))))
         (length dirs))
