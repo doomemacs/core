@@ -1526,7 +1526,15 @@ flush out with a couple RETs, which may execute the broken text in the buffer)."
         (when (and start-marker (< start-marker end-marker)) ;; Account for some of the IELM’s wilderness.
           (dlet ((inhibit-read-only t))
             ;; Make all past output read-only (disallow buffer modifications)
-            (add-text-properties comint-last-input-start (1- end-marker) '(read-only t))
+            ;; PERF: Only on the first output after an input does this have
+            ;;   to reach back to the input. Afterwards, only cover the new
+            ;;   output (and the last char of the previous one, left writable
+            ;;   below), otherwise streaming N chunks costs O(N^2).
+            (add-text-properties
+             (if (get-text-property comint-last-input-start 'read-only)
+                 (max (point-min) (1- start-marker))
+               comint-last-input-start)
+             (1- end-marker) '(read-only t))
             ;; Disallow interleaving.
             (remove-text-properties start-marker (1- end-marker) '(rear-nonsticky))
             ;; Make sure that at `max-point' you can always append. Important for
