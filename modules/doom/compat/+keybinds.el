@@ -292,7 +292,7 @@ For example, :nvi will map to (list \\='normal \\='visual \\='insert). See
   (when doom--map-batch-forms
     (cl-loop with attrs = (doom--map-state)
              for (state . defs) in doom--map-batch-forms
-             if (or doom--map-evil-p (not state))
+             if (or (not state) doom--map-evil-p (modulep! :editor evil))
              collect `(,(or doom--map-fn 'general-define-key)
                        ,@(if state `(:states ',state)) ,@attrs
                        ,@(mapcan #'identity (nreverse defs)))
