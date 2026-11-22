@@ -305,6 +305,20 @@ this and forces straight to emit a catchable error."
               (error "Failed to clone %S..." package))))))))
 
 
+;; HACK: When shallow-cloning a pinned commit, straight runs `git init'
+;;   followed by `git branch -m BRANCH', which fails on git < 2.28 because it
+;;   refuses to rename an unborn branch ("refname refs/heads/master not
+;;   found"). `git symbolic-ref' is equivalent there and works on all
+;;   versions. See #8538, #8903.
+(define-advice straight-vc-git--clone-internal (:around (fn &rest args) support-old-git)
+  (letf! (defadvice straight--process-output (:filter-args (args))
+           (if (equal (butlast args) '("git" "branch" "-m"))
+               (list "git" "symbolic-ref" "HEAD"
+                     (concat "refs/heads/" (car (last args))))
+             args))
+    (apply fn args)))
+
+
 ;; HACK: Straight can sometimes fail to clone/update a repo, leaving behind an
 ;;   empty directory which, in future invocations, it will assume indicates a
 ;;   successful clone (causing load errors later).
