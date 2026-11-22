@@ -671,8 +671,8 @@ The def* forms accepted are:
             (`(defadvice ,target ,first . ,rest)
              (if (keywordp first)
                  (let ((sym (gensym "fn")))
-                   `(when-let* ((,sym ,target))
-                      (advice-add ,target ,first ,sym ,@rest)
+                   `(when-let* ((,sym ,(car rest)))
+                      (advice-add ,target ,first ,sym ,@(cdr rest))
                       (unwind-protect ,body (advice-remove ,target ,sym))))
                (when (< (length first) 3)
                  (setq first
