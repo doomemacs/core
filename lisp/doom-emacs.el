@@ -1191,6 +1191,28 @@ windows, switch to `doom-fallback-buffer'. Otherwise, delegate to original
     (run-hooks 'after-setting-font-hook))
   (put 'doom-font 'initialized t))
 
+(defun doom-init-frame-fonts-h (frame)
+  "Reapply `doom-font' to FRAME if Emacs failed to resolve it there."
+  ;; HACK: New frames get their fonts from the face specs `doom-init-fonts-h'
+  ;;   records in the user theme, but Emacs 29+ can't always resolve those back
+  ;;   into the same font. See
+  ;;   https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=1055989.
+  ;; REVIEW: Report and address upstream in Emacs!
+  (when (and (get 'doom-font 'initialized)
+             (display-multi-font-p frame)
+             ;; Respect explicitly set frame fonts
+             (not (frame-parameter frame 'font-parameter)))
+    (let ((family (face-attribute 'default :family frame))
+          (actual (ignore-errors
+                    (font-get (font-spec :name (frame-parameter frame 'font))
+                              :family))))
+      (when (and actual
+                 (stringp family)
+                 (not (string= (downcase family)
+                               (downcase (format "%s" actual)))))
+        (with-selected-frame frame
+          (doom-init-fonts-h))))))
+
 (defun doom--dark-mode-p ()
   "Return non-nil if the OS is in dark-mode."
   (cond ((featurep :system 'macos)
@@ -1334,6 +1356,7 @@ triggering hooks during startup."
               'after-init-hook)))
   (add-hook hook #'doom-init-fonts-h -100)
   (add-hook hook #'doom-init-theme-h -90))
+(add-hook 'after-make-frame-functions #'doom-init-frame-fonts-h)
 
 ;; PERF: Init UI late, but not too late. Its impact on startup time seems to
 ;;   vary wildly depending on exact placement. `window-setup-hook' appears to be
